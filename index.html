@@ -1,0 +1,145 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Dire Wolf OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <meta name="theme-color" content="#eef0f6">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="stylesheet" href="./assets/css/app.css?v=20260425z">
+</head>
+<body>
+  <div class="app-bg">
+    <div class="app-glow app-glow-a"></div>
+    <div class="app-glow app-glow-b"></div>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+
+  <section id="loginScreen" class="login-screen">
+    <div class="login-card">
+      <div class="login-brand">
+        <h1>Dire Wolf OS <span>Project Management</span></h1>
+        <p>Turn scattered work into clear priorities, focused execution, and visible progress every day.</p>
+        <div class="login-logo-showcase" aria-label="Wolvester Marketing">
+          <img src="./assets/img/wolfvester-logo-theme.png?v=20260425-logo2" alt="Wolvester Marketing">
+        </div>
+      </div>
+
+      <div class="login-form">
+        <label class="field">
+          <span>Username or Email</span>
+          <input id="loginIdentifier" type="text" placeholder="Username or email address">
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="loginPassword" type="password" placeholder="1234">
+        </label>
+        <div id="loginError" class="login-error"></div>
+        <button id="loginSubmit" class="primary-button" type="button">Sign In</button>
+        <p class="login-hint">Internal tool for Wolvester Marketing team.<br>Contact your admin if you need access.</p>
+      </div>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-head">
+        <div>
+          <div class="brand-mark">Dire Wolf OS</div>
+          <div class="brand-sub">Project Management v1.0.0</div>
+        </div>
+        <button id="sidebarClose" class="icon-button mobile-only" type="button">x</button>
+      </div>
+
+      <div class="current-user">
+        <div id="currentUserAvatar" class="avatar large"></div>
+        <div class="current-user-copy">
+          <div id="currentUserName" class="current-user-name"></div>
+          <div id="currentUserMeta" class="current-user-meta"></div>
+        </div>
+        <div id="currentUserDot" class="status-dot"></div>
+      </div>
+
+      <div class="sidebar-panel">
+        <div class="sidebar-label">Main Menu</div>
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-action="nav" data-page="dashboard" type="button">Overview</button>
+          <button class="nav-item" data-action="nav" data-page="projects" type="button">Projects</button>
+          <button class="nav-item" data-action="nav" data-page="onlyme" type="button">Only me</button>
+          <button class="nav-item" data-action="nav" data-page="board" type="button">Task Board <span id="boardBadge" class="nav-badge hidden" title="Your open tasks assigned to you"></span></button>
+          <button class="nav-item" data-action="nav" data-page="calendar" type="button">Calendar</button>
+          <button class="nav-item" data-action="nav" data-page="meetings" type="button">Meetings</button>
+          <button class="nav-item" data-action="nav" data-page="briefs" type="button">CEO Brief <span id="briefBadge" class="nav-badge hidden"></span></button>
+          <button class="nav-item" data-action="nav" data-page="team" type="button">Team</button>
+          <button class="nav-item" data-action="nav" data-page="notifications" type="button">Notifications <span id="notificationBadge" class="nav-badge hidden"></span></button>
+        </nav>
+      </div>
+
+      <div class="sidebar-panel">
+        <div class="sidebar-label">Departments</div>
+        <div id="departmentPills" class="department-pills"></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="data-source-card">
+          <div class="sidebar-label">Data Source</div>
+          <div id="dataSourceStatus" class="data-source-status">Loading...</div>
+        </div>
+        <button id="logoutButton" class="secondary-button" type="button">Logout</button>
+      </div>
+    </aside>
+
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button id="sidebarOpen" class="icon-button mobile-only" type="button">=</button>
+          <div>
+            <h2 id="pageTitle">Overview</h2>
+            <p id="pageSubtitle">Company-wide delivery snapshot</p>
+          </div>
+        </div>
+        <div class="topbar-right">
+          <div id="timelineWarning" class="timeline-warning hidden"></div>
+          <button id="createPrimaryButton" class="primary-button" type="button">+ New Task</button>
+        </div>
+      </header>
+
+      <div class="page-stack">
+        <section id="page-dashboard" class="page active"></section>
+        <section id="page-onlyme" class="page"></section>
+        <section id="page-board" class="page"></section>
+        <section id="page-calendar" class="page"></section>
+        <section id="page-projects" class="page"></section>
+        <section id="page-meetings" class="page"></section>
+        <section id="page-briefs" class="page"></section>
+        <section id="page-team" class="page"></section>
+        <section id="page-notifications" class="page"></section>
+      </div>
+
+      <footer class="app-footer">
+        <span>Dire Wolf OS &mdash; Wolvester Marketing Co., Ltd.</span>
+        <span class="app-footer-sep">&middot;</span>
+        <span>&copy; 2026 Pap Saiyawong. All rights reserved.</span>
+      </footer>
+    </main>
+  </div>
+
+  <div id="drawerOverlay" class="drawer-overlay hidden"></div>
+  <aside id="drawer" class="drawer hidden"></aside>
+
+  <div id="modalOverlay" class="modal-overlay hidden">
+    <div id="modalCard" class="modal-card"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/dist/bcrypt.min.js"></script>
+  <script src="./assets/js/config.js?v=20260425z"></script>
+  <script src="./assets/js/app.js?v=20260425z"></script>
+</body>
+</html>
