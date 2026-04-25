@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คู่มือการใช้งาน — Dire Wolf OS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Thai:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:          #0f1117;
+      --surface:     #181c27;
+      --surface2:    #1e2235;
+      --border:      rgba(255,255,255,0.07);
+      --border2:     rgba(255,255,255,0.12);
+      --text:        #e8eaf0;
+      --text-sub:    #8b90a8;
+      --text-muted:  #555a72;
+      --accent:      #7c6ff7;
+      --accent2:     #5b9cf6;
+      --accent3:     #f06292;
+      --green:       #4caf87;
+      --orange:      #f59e0b;
+      --red:         #ef4444;
+      --glow-a:      rgba(124,111,247,0.18);
+      --glow-b:      rgba(91,156,246,0.12);
+      --radius:      14px;
+      --radius-sm:   8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Thai', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* ── Background glows ── */
+    .bg-wrap {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      overflow: hidden;
+    }
+    .glow {
+      position: absolute; border-radius: 50%; filter: blur(120px);
+    }
+    .glow-a {
+      width: 700px; height: 700px; top: -200px; left: -200px;
+      background: var(--glow-a);
+    }
+    .glow-b {
+      width: 600px; height: 600px; bottom: -150px; right: -100px;
+      background: var(--glow-b);
+    }
+
+    /* ── Layout ── */
+    .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ── Sidebar / TOC ── */
+    .toc {
+      width: 280px; flex-shrink: 0;
+      background: rgba(24,28,39,0.85);
+      border-right: 1px solid var(--border);
+      backdrop-filter: blur(20px);
+      position: sticky; top: 0; height: 100vh;
+      overflow-y: auto; padding: 32px 0 40px;
+      display: flex; flex-direction: column;
+    }
+    .toc::-webkit-scrollbar { width: 4px; }
+    .toc::-webkit-scrollbar-track { background: transparent; }
+    .toc::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+    .toc-brand {
+      padding: 0 24px 28px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .toc-brand-title {
+      font-size: 17px; font-weight: 800;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .toc-brand-sub {
+      font-size: 11px; color: var(--text-muted); margin-top: 3px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    .toc-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--text-muted);
+      padding: 0 24px 8px;
+    }
+    .toc a {
+      display: block; padding: 7px 24px;
+      color: var(--text-sub); text-decoration: none;
+      font-size: 13.5px; font-weight: 500;
+      border-left: 2px solid transparent;
+      transition: all 0.15s;
+    }
+    .toc a:hover { color: var(--text); background: rgba(124,111,247,0.08); }
+    .toc a.active, .toc a:target { color: var(--accent); border-left-color: var(--accent); background: rgba(124,111,247,0.10); }
+    .toc .sub { padding-left: 38px; font-size: 12.5px; }
+
+    .toc-section { margin-top: 16px; }
+
+    /* ── Main content ── */
+    .content {
+      flex: 1; padding: 60px 64px 100px;
+      max-width: 900px;
+    }
+
+    /* ── Cover ── */
+    .cover {
+      margin-bottom: 72px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid var(--border);
+    }
+    .cover-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(124,111,247,0.15); border: 1px solid rgba(124,111,247,0.3);
+      color: var(--accent); font-size: 11.5px; font-weight: 600;
+      padding: 5px 12px; border-radius: 20px; margin-bottom: 20px;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .cover h1 {
+      font-size: 48px; font-weight: 800; line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 30%, var(--accent) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cover h1 span { display: block; font-size: 28px; color: var(--text-sub); -webkit-text-fill-color: var(--text-sub); }
+    .cover-meta {
+      margin-top: 20px; display: flex; flex-wrap: wrap; gap: 20px;
+    }
+    .cover-meta-item {
+      font-size: 13px; color: var(--text-sub);
+    }
+    .cover-meta-item strong { color: var(--text); }
+
+    /* ── Section headings ── */
+    .section { margin-bottom: 64px; scroll-margin-top: 32px; }
+
+    h2 {
+      font-size: 26px; font-weight: 800; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    h2 .num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 34px; height: 34px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      font-size: 14px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    h3 {
+      font-size: 17px; font-weight: 700; margin: 32px 0 14px;
+      color: var(--text);
+    }
+    h4 {
+      font-size: 14px; font-weight: 700; margin: 20px 0 8px;
+      color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em;
+    }
+
+    p { margin-bottom: 14px; color: var(--text-sub); }
+    p strong { color: var(--text); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-accent {
+      border-color: rgba(124,111,247,0.3);
+      background: rgba(124,111,247,0.06);
+    }
+    .card-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 14px; margin-bottom: 24px;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+    .feature-card:hover {
+      border-color: rgba(124,111,247,0.4);
+      transform: translateY(-2px);
+    }
+    .feature-card .icon {
+      font-size: 26px; margin-bottom: 10px;
+    }
+    .feature-card h4 {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      text-transform: none; letter-spacing: 0; margin: 0 0 6px;
+    }
+    .feature-card p {
+      font-size: 13px; margin: 0; line-height: 1.5;
+    }
+
+    /* ── Role table ── */
+    .table-wrap { overflow-x: auto; margin-bottom: 24px; }
+    table {
+      width: 100%; border-collapse: collapse;
+      font-size: 13.5px;
+    }
+    th {
+      background: var(--surface2);
+      color: var(--text); font-weight: 700;
+      padding: 11px 14px; text-align: left;
+      border-bottom: 2px solid var(--border2);
+      white-space: nowrap;
+    }
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-sub);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,0.02); }
+    td.center, th.center { text-align: center; }
+
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .badge-yes { background: rgba(76,175,135,0.15); color: var(--green); }
+    .badge-no  { background: rgba(239,68,68,0.12); color: var(--red); }
+    .badge-cond { background: rgba(245,158,11,0.15); color: var(--orange); }
+    .badge-role {
+      background: rgba(124,111,247,0.15); color: var(--accent);
+      border: 1px solid rgba(124,111,247,0.25);
+    }
+
+    /* ── Steps ── */
+    .steps { list-style: none; counter-reset: step; margin-bottom: 20px; }
+    .steps li {
+      counter-increment: step;
+      display: flex; gap: 14px; margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .steps li::before {
+      content: counter(step);
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 28px; height: 28px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border2);
+      color: var(--accent); font-size: 12px; font-weight: 700;
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .steps li .step-body { color: var(--text-sub); }
+    .steps li .step-body strong { color: var(--text); }
+
+    /* ── Info / warning boxes ── */
+    .info-box {
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 16px 18px; border-radius: var(--radius-sm);
+      margin-bottom: 18px; font-size: 13.5px;
+    }
+    .info-box .icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .info-box p { margin: 0; }
+    .info-tip  { background: rgba(91,156,246,0.08); border: 1px solid rgba(91,156,246,0.2); color: var(--accent2); }
+    .info-warn { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); color: var(--orange); }
+    .info-danger { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); color: var(--red); }
+
+    /* ── Tags / pills ── */
+    .tag {
+      display: inline-block; padding: 2px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600; margin: 2px 3px 2px 0;
+    }
+    .tag-purple { background: rgba(124,111,247,0.15); color: var(--accent); }
+    .tag-blue   { background: rgba(91,156,246,0.15); color: var(--accent2); }
+    .tag-green  { background: rgba(76,175,135,0.15); color: var(--green); }
+    .tag-orange { background: rgba(245,158,11,0.15); color: var(--orange); }
+    .tag-red    { background: rgba(239,68,68,0.12); color: var(--red); }
+
+    /* ── Status demo ── */
+    .status-row {
+      display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0;
+    }
+    .status-pill {
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+    }
+    .status-pill .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .s-backlog    { background: rgba(139,144,168,0.15); color: #8b90a8; }
+    .s-backlog .dot    { background: #8b90a8; }
+    .s-inprogress { background: rgba(91,156,246,0.15); color: var(--accent2); }
+    .s-inprogress .dot { background: var(--accent2); }
+    .s-review     { background: rgba(245,158,11,0.15); color: var(--orange); }
+    .s-review .dot     { background: var(--orange); }
+    .s-approve    { background: rgba(76,175,135,0.15); color: var(--green); }
+    .s-approve .dot    { background: var(--green); }
+    .s-hold       { background: rgba(239,68,68,0.12); color: var(--red); }
+    .s-hold .dot       { background: var(--red); }
+
+    /* ── Divider ── */
+    .divider {
+      border: none; border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
+    /* ── Footer ── */
+    .doc-footer {
+      margin-top: 80px; padding-top: 32px;
+      border-top: 1px solid var(--border);
+      text-align: center; color: var(--text-muted);
+      font-size: 12.5px; line-height: 2;
+    }
+
+    @media print {
+      .toc { display: none; }
+      .content { padding: 40px; max-width: 100%; }
+      .bg-wrap { display: none; }
+    }
+
+    @media (max-width: 900px) {
+      .toc { display: none; }
+      .content { padding: 32px 24px 80px; }
+      .cover h1 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="bg-wrap">
+  <div class="glow glow-a"></div>
+  <div class="glow glow-b"></div>
+</div>
+
+<div class="layout">
+
+  <!-- ════════════════ SIDEBAR TOC ════════════════ -->
+  <nav class="toc">
+    <div class="toc-brand">
+      <div class="toc-brand-title">Dire Wolf OS</div>
+      <div class="toc-brand-sub">คู่มือการใช้งาน v1.0</div>
+    </div>
+
+    <div class="toc-label">เนื้อหา</div>
+    <a href="#overview">ภาพรวมระบบ</a>
+    <a href="#features">รายการฟีเจอร์</a>
+    <a href="#roles">สิทธิ์การใช้งาน</a>
+
+    <div class="toc-section">
+      <div class="toc-label">การใช้งาน</div>
+      <a href="#login">เข้าสู่ระบบ</a>
+      <a href="#dashboard">หน้า Overview</a>
+      <a href="#projects">จัดการโปรเจกต์</a>
+      <a href="#tasks">จัดการงาน (Task)</a>
+      <a href="#board">Task Board</a>
+      <a href="#onlyme">Only Me</a>
+      <a href="#calendar">Calendar</a>
+      <a href="#meetings">Meetings</a>
+      <a href="#briefs">CEO Brief</a>
+      <a href="#team">Team & ผู้ใช้</a>
+      <a href="#notifications">การแจ้งเตือน</a>
+    </div>
+
+    <div class="toc-section">
+      <div class="toc-label">อ้างอิง</div>
+      <a href="#status">Status Workflow</a>
+      <a href="#attachments">ไฟล์แนบ</a>
+      <a href="#security">ความปลอดภัย</a>
+      <a href="#limits">ข้อจำกัดระบบ</a>
+    </div>
+  </nav>
+
+  <!-- ════════════════ MAIN CONTENT ════════════════ -->
+  <main class="content">
+
+    <!-- COVER -->
+    <div class="cover">
+      <div class="cover-badge">📘 คู่มือการใช้งานอย่างเป็นทางการ</div>
+      <h1>
+        Dire Wolf OS
+        <span>Project Management System</span>
+      </h1>
+      <div class="cover-meta">
+        <div class="cover-meta-item">เวอร์ชัน <strong>v1.0.0 (20260425z)</strong></div>
+        <div class="cover-meta-item">บริษัท <strong>Wolvester Marketing Co., Ltd.</strong></div>
+        <div class="cover-meta-item">เข้าใช้งาน <strong>https://labs-d.online/</strong></div>
+        <div class="cover-meta-item">อัปเดต <strong>25 เมษายน 2569</strong></div>
+      </div>
+    </div>
+
+    <!-- 1. OVERVIEW -->
+    <section class="section" id="overview">
+      <h2><span class="num">1</span>ภาพรวมระบบ</h2>
+      <p>
+        <strong>Dire Wolf OS</strong> คือระบบจัดการโปรเจกต์และงานภายในองค์กร พัฒนาขึ้นสำหรับทีม Wolvester Marketing โดยเฉพาะ รองรับการทำงานแบบ Multi-role ตั้งแต่ Admin ไปจนถึง Viewer สามารถเข้าใช้งานได้ผ่าน Browser ทุกอุปกรณ์ ทั้ง Desktop, Tablet และ Mobile โดยไม่ต้องติดตั้งแอปพลิเคชันเพิ่มเติม
+      </p>
+      <p>
+        ระบบทำงานแบบ <strong>Single Page Application (SPA)</strong> เชื่อมต่อกับ Supabase Database แบบ Real-time ข้อมูลทุกอย่างถูกบันทึกลง Cloud โดยอัตโนมัติ
+      </p>
+
+      <div class="card card-accent" style="margin-top:24px;">
+        <h4 style="margin-top:0;">จุดเด่นสำคัญ</h4>
+        <p style="margin:0;">
+          ✦ จัดการโปรเจกต์และงานในที่เดียว &nbsp;·&nbsp;
+          ✦ Sprint Timeline แบบ Gantt &nbsp;·&nbsp;
+          ✦ ระบบสิทธิ์ตาม Role &nbsp;·&nbsp;
+          ✦ ใช้งานได้ทุกอุปกรณ์ &nbsp;·&nbsp;
+          ✦ รองรับภาษาไทย
+        </p>
+      </div>
+    </section>
+
+    <!-- 2. FEATURE LIST -->
+    <section class="section" id="features">
+      <h2><span class="num">2</span>รายการฟีเจอร์</h2>
+
+      <div class="card-grid">
+        <div class="feature-card">
+          <div class="icon">📊</div>
+          <h4>Overview Dashboard</h4>
+          <p>ภาพรวมสถานะงานทั้งบริษัท Progress metrics, งานเร่งด่วน และ Timeline สรุป</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📁</div>
+          <h4>Project Management</h4>
+          <p>สร้างและจัดการโปรเจกต์ ตั้งวันเริ่มต้น-สิ้นสุด กำหนด Department และ Sprint Timeline</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">✅</div>
+          <h4>Task Management</h4>
+          <p>สร้างงาน กำหนด Assignee, Due date, Priority, Progress และ Subtask ได้ไม่จำกัด</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🗂️</div>
+          <h4>Task Board (Kanban)</h4>
+          <p>มุมมอง Kanban Board แยก column ตาม Status พร้อม Badge แสดงจำนวนงานที่รับผิดชอบ</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🙋</div>
+          <h4>Only Me</h4>
+          <p>หน้ารวมงานส่วนตัว แสดงเฉพาะงานที่ถูก Assign ให้ตัวเอง กรองตาม Status ได้</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📅</div>
+          <h4>Calendar View</h4>
+          <p>ดูงานและ Due date ในรูปแบบปฏิทิน คลิกวันเพื่อดูงานของวันนั้นทันที</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🤝</div>
+          <h4>Meetings</h4>
+          <p>บันทึกการประชุม วาระ ผู้เข้าร่วม สรุปผล และแนบไฟล์ประกอบการประชุมได้</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📋</div>
+          <h4>CEO Brief</h4>
+          <p>พื้นที่สรุปรายงานสำหรับ Admin และ CEO เท่านั้น รองรับไฟล์แนบและ Progress tracking</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">👥</div>
+          <h4>Team Management</h4>
+          <p>จัดการผู้ใช้งานและแผนก เพิ่ม/แก้ไข/ลบ User กำหนด Role และเปลี่ยนรหัสผ่าน</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🔔</div>
+          <h4>Notifications</h4>
+          <p>รับการแจ้งเตือนเมื่อมีงานใหม่ ครบ Due date หรือมีการเปลี่ยนแปลงที่เกี่ยวข้อง</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📎</div>
+          <h4>File Attachments</h4>
+          <p>แนบไฟล์ในงาน, โปรเจกต์, การประชุม และ CEO Brief ขนาดไฟล์สูงสุด 30 MB ต่อไฟล์</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">💬</div>
+          <h4>Comments</h4>
+          <p>แสดงความคิดเห็นในงานแต่ละชิ้น พร้อมระบุผู้แสดงความคิดเห็นและวันเวลา</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📈</div>
+          <h4>Progress Tracking</h4>
+          <p>ติดตาม Progress ได้ทั้งแบบ Slider (0–100%) และคำนวณอัตโนมัติจาก Subtask</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🔒</div>
+          <h4>Secret Projects</h4>
+          <p>โปรเจกต์ลับที่มองเห็นได้เฉพาะ Admin, CEO, Executive และสมาชิกโปรเจกต์</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">🏢</div>
+          <h4>Departments</h4>
+          <p>สร้างและจัดการแผนก แสดง Department Pills ใน Sidebar กรองงานตาม Department ได้</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon">📜</div>
+          <h4>System Log</h4>
+          <p>บันทึก Log การ Login ทั้งหมด มองเห็นได้เฉพาะ Admin และ CEO ลบอัตโนมัติทุก 7 วัน</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ROLES -->
+    <section class="section" id="roles">
+      <h2><span class="num">3</span>สิทธิ์การใช้งาน (Roles)</h2>
+      <p>ระบบแบ่ง Role ผู้ใช้ออกเป็น 6 ระดับ โดยแต่ละ Role มีสิทธิ์ในการสร้าง แก้ไข และลบข้อมูลที่แตกต่างกัน</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th class="center">ลำดับ</th>
+              <th class="center">สร้าง Project</th>
+              <th class="center">แก้ไข Project</th>
+              <th class="center">สร้าง Task</th>
+              <th class="center">ลบ Task</th>
+              <th class="center">CEO Brief</th>
+              <th class="center">จัดการ User</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="badge badge-role">Admin</span></td>
+              <td class="center">1</td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ทั้งหมด</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ทั้งหมด</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-role">CEO</span></td>
+              <td class="center">2</td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-cond">ตัวเอง/ต่ำกว่า</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-cond">ตัวเอง/ต่ำกว่า</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-role">Executive</span></td>
+              <td class="center">3</td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-cond">ตัวเอง/ต่ำกว่า</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-cond">ตัวเอง/ต่ำกว่า</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-role">Head</span></td>
+              <td class="center">4</td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-cond">ตัวเอง/ต่ำกว่า</span></td>
+              <td class="center"><span class="badge badge-yes">✓ ได้</span></td>
+              <td class="center"><span class="badge badge-cond">ตัวเอง/ต่ำกว่า</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-role">Member</span></td>
+              <td class="center">5</td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-cond">เฉพาะที่ถูก Assign</span></td>
+              <td class="center"><span class="badge badge-cond">เฉพาะของตัวเอง</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+            </tr>
+            <tr>
+              <td><span class="badge badge-role">Viewer</span></td>
+              <td class="center">6</td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+              <td class="center"><span class="badge badge-no">✗ ไม่ได้</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box info-warn">
+        <span class="icon">⚠️</span>
+        <p><strong>Secret Project:</strong> มองเห็นได้เฉพาะ Admin, CEO, Executive, เจ้าของโปรเจกต์ และสมาชิกที่ถูกเพิ่มเข้า Project เท่านั้น</p>
+      </div>
+      <div class="info-box info-tip">
+        <span class="icon">💡</span>
+        <p><strong>CEO Brief:</strong> เข้าถึงได้เฉพาะ Admin และ CEO เท่านั้น Role อื่นจะไม่เห็นเมนูนี้</p>
+      </div>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 4. LOGIN -->
+    <section class="section" id="login">
+      <h2><span class="num">4</span>เข้าสู่ระบบ</h2>
+
+      <ol class="steps">
+        <li><div class="step-body">เปิด Browser และไปที่ <strong>https://labs-d.online/</strong></div></li>
+        <li><div class="step-body">กรอก <strong>Username</strong> หรือ <strong>Email</strong> ของคุณ</div></li>
+        <li><div class="step-body">กรอก <strong>Password</strong> (ค่าเริ่มต้นที่ Admin กำหนดให้)</div></li>
+        <li><div class="step-body">กด <strong>Sign In</strong> เพื่อเข้าสู่ระบบ</div></li>
+      </ol>
+
+      <div class="info-box info-tip">
+        <span class="icon">🔑</span>
+        <p>หลังเข้าระบบครั้งแรก ควรเปลี่ยนรหัสผ่านทันที ไปที่เมนู <strong>Team</strong> → กด <strong>Change password</strong> ในส่วน My Account</p>
+      </div>
+
+      <h3>เปลี่ยนรหัสผ่าน</h3>
+      <ol class="steps">
+        <li><div class="step-body">คลิกเมนู <strong>Team</strong> ใน Sidebar</div></li>
+        <li><div class="step-body">ส่วน <strong>My Account</strong> ด้านบน → กด <strong>Change password</strong></div></li>
+        <li><div class="step-body">กรอกรหัสผ่านปัจจุบัน → รหัสใหม่ → ยืนยันรหัสใหม่</div></li>
+        <li><div class="step-body">กด <strong>Save password</strong></div></li>
+      </ol>
+
+      <div class="info-box info-warn">
+        <span class="icon">⚠️</span>
+        <p>Session จะหมดอายุเมื่อปิด Tab หรือ Browser หากต้องการใช้งานต่อต้อง Login ใหม่</p>
+      </div>
+    </section>
+
+    <!-- 5. DASHBOARD -->
+    <section class="section" id="dashboard">
+      <h2><span class="num">5</span>หน้า Overview (Dashboard)</h2>
+      <p>หน้าหลักแสดงภาพรวมสถานะงานของทั้งบริษัท ประกอบด้วย:</p>
+
+      <div class="card">
+        <h4 style="margin-top:0;">สิ่งที่แสดงในหน้า Overview</h4>
+        <p><strong>Metric Cards</strong> — สรุปจำนวนงานแยกตาม Status (Backlog / In Progress / Review / Approved)</p>
+        <p><strong>Sprint Timeline</strong> — ไทม์ไลน์แสดงงานทุกชิ้นในรูปแบบ Gantt Chart คลิกงานเพื่อดูรายละเอียด</p>
+        <p><strong>Priority Tasks</strong> — งานที่มี Priority สูงและ Due date ใกล้ถึง</p>
+        <p style="margin:0;"><strong>Department Filter</strong> — กรองมุมมองตาม Department โดยคลิก Department Pill ใน Sidebar</p>
+      </div>
+
+      <h3>Sprint Timeline</h3>
+      <p>Timeline แสดงงานทั้งหมดเรียงตามวันเริ่มต้น-สิ้นสุด สามารถสลับมุมมองได้:</p>
+      <p>
+        <span class="tag tag-purple">Day</span>
+        <span class="tag tag-blue">Week</span>
+        <span class="tag tag-green">Month</span>
+        <span class="tag tag-orange">Quarter</span>
+      </p>
+      <p>คลิกที่แถบงานใด ๆ ใน Timeline เพื่อเปิด Drawer รายละเอียดงานนั้นทันที</p>
+    </section>
+
+    <!-- 6. PROJECTS -->
+    <section class="section" id="projects">
+      <h2><span class="num">6</span>จัดการโปรเจกต์</h2>
+
+      <h3>สร้างโปรเจกต์ใหม่</h3>
+      <ol class="steps">
+        <li><div class="step-body">คลิก <strong>+ New Project</strong> (ปุ่มมุมขวาบน) หรือ <strong>+ New Task</strong> แล้วเลือก New Project</div></li>
+        <li><div class="step-body">กรอกชื่อโปรเจกต์ และเลือก <strong>Department</strong></div></li>
+        <li><div class="step-body">ตั้ง <strong>Start Date</strong> และ <strong>End Date</strong> เพื่อให้ Sprint Timeline แสดงผลถูกต้อง</div></li>
+        <li><div class="step-body">เลือก <strong>Status</strong> (Active / On Hold / Completed)</div></li>
+        <li><div class="step-body">หากต้องการซ่อนจาก Role ต่ำกว่า Executive ให้เปิด <strong>Secret Project</strong></div></li>
+        <li><div class="step-body">กด <strong>Save</strong></div></li>
+      </ol>
+
+      <h3>Sprint Timeline ของโปรเจกต์</h3>
+      <p>เมื่อเปิด Drawer โปรเจกต์ จะเห็น Sprint Timeline แสดงงานทั้งหมดในโปรเจกต์นั้น โดยใช้ <strong>Start Date ของโปรเจกต์</strong> เป็นจุดเริ่มต้นของ Timeline (ไม่ใช่วันนี้)</p>
+
+      <div class="info-box info-tip">
+        <span class="icon">💡</span>
+        <p>การตั้ง <strong>Start Date</strong> ให้โปรเจกต์มีความสำคัญมาก หากไม่ตั้ง Timeline จะ Default เป็นวันนี้ ทำให้ดูงานในอดีตไม่ได้</p>
+      </div>
+
+      <h3>ลบโปรเจกต์</h3>
+      <div class="info-box info-danger">
+        <span class="icon">🗑️</span>
+        <p>การลบโปรเจกต์จะ <strong>ลบงาน (Task) ทุกชิ้นในโปรเจกต์นั้นออกจาก Database ด้วย</strong> ไม่สามารถกู้คืนได้ ระบบจะแจ้งจำนวนงานที่จะถูกลบก่อนยืนยัน</p>
+      </div>
+    </section>
+
+    <!-- 7. TASKS -->
+    <section class="section" id="tasks">
+      <h2><span class="num">7</span>จัดการงาน (Task)</h2>
+
+      <h3>สร้างงานใหม่</h3>
+      <ol class="steps">
+        <li><div class="step-body">คลิก <strong>+ New Task</strong> มุมขวาบน</div></li>
+        <li><div class="step-body">กรอก <strong>ชื่องาน</strong> (จำเป็น)</div></li>
+        <li><div class="step-body">เลือก <strong>Project</strong> ที่งานนี้สังกัด</div></li>
+        <li><div class="step-body">กำหนด <strong>Assignee</strong>, <strong>Due Date</strong>, <strong>Priority</strong></div></li>
+        <li><div class="step-body">ตั้ง <strong>Status</strong> และ <strong>Progress</strong> (0–100%)</div></li>
+        <li><div class="step-body">กด <strong>Save Task</strong></div></li>
+      </ol>
+
+      <h3>ฟิลด์ของงาน</h3>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ฟิลด์</th><th>คำอธิบาย</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Title</strong></td><td>ชื่องาน (จำเป็น)</td></tr>
+            <tr><td><strong>Project</strong></td><td>โปรเจกต์ที่งานนี้สังกัด</td></tr>
+            <tr><td><strong>Assignee</strong></td><td>ผู้รับผิดชอบงาน</td></tr>
+            <tr><td><strong>Due Date</strong></td><td>วันกำหนดส่งงาน</td></tr>
+            <tr><td><strong>Priority</strong></td><td>Low / Medium / High / Critical</td></tr>
+            <tr><td><strong>Status</strong></td><td>Backlog / In Progress / Review / Approved / On Hold</td></tr>
+            <tr><td><strong>Progress</strong></td><td>ความคืบหน้า 0–100% (ถ้ามี Subtask จะคำนวณอัตโนมัติ)</td></tr>
+            <tr><td><strong>Description</strong></td><td>รายละเอียดงาน</td></tr>
+            <tr><td><strong>Subtasks</strong></td><td>งานย่อย เพิ่มได้ไม่จำกัด</td></tr>
+            <tr><td><strong>Attachments</strong></td><td>ไฟล์แนบ สูงสุด 30 MB ต่อไฟล์</td></tr>
+            <tr><td><strong>Comments</strong></td><td>ความคิดเห็น/บันทึกเพิ่มเติม</td></tr>
+            <tr><td><strong>Tags</strong></td><td>ป้ายกำกับสำหรับจัดหมวดหมู่</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Subtask</h3>
+      <p>งานย่อยภายในงาน แต่ละ Subtask มี Title, Status และ Progress เป็นของตัวเอง เมื่อมี Subtask ระบบจะ <strong>คำนวณ Progress ของงานหลักจาก Subtask โดยอัตโนมัติ</strong> (ค่าเฉลี่ย) โดยไม่ใช้ Slider ของงานหลัก</p>
+
+      <h3>Comments</h3>
+      <p>คลิก <strong>Show</strong> ที่ Panel ความคิดเห็นใน Drawer งาน เพื่อขยายดูและเพิ่ม Comment ได้ Panel จะปิดโดยอัตโนมัติหากยังไม่มี Comment ใด ๆ</p>
+    </section>
+
+    <!-- 8. BOARD -->
+    <section class="section" id="board">
+      <h2><span class="num">8</span>Task Board (Kanban)</h2>
+      <p>หน้า Task Board แสดงงาน<strong>ทั้งหมดที่ Assign ให้คุณ</strong>ในรูปแบบ Kanban Board แยกตาม Status</p>
+
+      <div class="status-row">
+        <div class="status-pill s-backlog"><span class="dot"></span>Backlog</div>
+        <div class="status-pill s-inprogress"><span class="dot"></span>In Progress</div>
+        <div class="status-pill s-review"><span class="dot"></span>Review</div>
+        <div class="status-pill s-approve"><span class="dot"></span>Approved</div>
+        <div class="status-pill s-hold"><span class="dot"></span>On Hold</div>
+      </div>
+
+      <p style="margin-top:14px;">คลิกที่การ์ดงานเพื่อเปิด Drawer ดูรายละเอียด คลิก Badge <strong>ตัวเลข</strong> บน Sidebar ข้างชื่อ Task Board เพื่อดูจำนวนงาน Open ที่รับผิดชอบอยู่</p>
+    </section>
+
+    <!-- 9. ONLY ME -->
+    <section class="section" id="onlyme">
+      <h2><span class="num">9</span>Only Me</h2>
+      <p>รวมงานส่วนตัวทั้งหมดที่ถูก Assign ให้คุณจากทุก Project กรองได้ตาม Status และ Priority เหมาะสำหรับตรวจสอบงานค้างส่วนตัวก่อนเริ่มวัน</p>
+    </section>
+
+    <!-- 10. CALENDAR -->
+    <section class="section" id="calendar">
+      <h2><span class="num">10</span>Calendar</h2>
+      <p>มุมมองปฏิทินแสดง <strong>Due date</strong> ของงานทุกชิ้น คลิกวันที่ใดวันหนึ่งเพื่อดูรายการงานที่ครบกำหนดในวันนั้น คลิกงานเพื่อเปิดรายละเอียด</p>
+      <div class="info-box info-tip">
+        <span class="icon">💡</span>
+        <p>งานที่ไม่มี Due date จะไม่ปรากฏใน Calendar แนะนำให้ตั้ง Due date ทุกครั้งที่สร้างงาน</p>
+      </div>
+    </section>
+
+    <!-- 11. MEETINGS -->
+    <section class="section" id="meetings">
+      <h2><span class="num">11</span>Meetings</h2>
+
+      <h3>บันทึกการประชุมใหม่</h3>
+      <ol class="steps">
+        <li><div class="step-body">ไปที่เมนู <strong>Meetings</strong> → คลิก <strong>+ New Meeting</strong></div></li>
+        <li><div class="step-body">กรอกหัวข้อ (<strong>Title</strong>), วันที่, เวลา และสถานที่</div></li>
+        <li><div class="step-body">เพิ่ม <strong>Agenda</strong> รายการวาระการประชุม</div></li>
+        <li><div class="step-body">เลือก <strong>Attendees</strong> จากรายชื่อในระบบ</div></li>
+        <li><div class="step-body">หลังประชุม เพิ่ม <strong>Minutes</strong> (สรุปผลการประชุม) และ <strong>Action Items</strong></div></li>
+        <li><div class="step-body">แนบไฟล์เอกสารประกอบได้ใน <strong>Attachments</strong></div></li>
+        <li><div class="step-body">กด <strong>Save</strong></div></li>
+      </ol>
+    </section>
+
+    <!-- 12. CEO BRIEF -->
+    <section class="section" id="briefs">
+      <h2><span class="num">12</span>CEO Brief</h2>
+
+      <div class="info-box info-warn">
+        <span class="icon">🔐</span>
+        <p>เมนูนี้มองเห็นและเข้าใช้งานได้เฉพาะ <strong>Admin และ CEO</strong> เท่านั้น</p>
+      </div>
+
+      <p>พื้นที่สำหรับบันทึกรายงานและ Brief สำคัญระดับผู้บริหาร แต่ละ Brief มี:</p>
+      <ul style="color:var(--text-sub); padding-left:20px; margin-bottom:14px; line-height:2;">
+        <li>ชื่อรายงาน และโปรเจกต์ที่เกี่ยวข้อง</li>
+        <li>Progress Slider (0–100%)</li>
+        <li>เนื้อหา/รายละเอียด</li>
+        <li>ไฟล์แนบ</li>
+        <li>วันที่สร้างและอัปเดตล่าสุด</li>
+      </ul>
+    </section>
+
+    <!-- 13. TEAM -->
+    <section class="section" id="team">
+      <h2><span class="num">13</span>Team & ผู้ใช้</h2>
+
+      <h3>จัดการผู้ใช้ (Admin เท่านั้น)</h3>
+      <ol class="steps">
+        <li><div class="step-body">ไปที่เมนู <strong>Team</strong></div></li>
+        <li><div class="step-body">คลิก <strong>+ Add User</strong> เพื่อเพิ่มผู้ใช้ใหม่</div></li>
+        <li><div class="step-body">กรอก ชื่อ, Username, Email, Password เริ่มต้น และเลือก <strong>Role</strong></div></li>
+        <li><div class="step-body">เลือก <strong>Department</strong> ที่สังกัด</div></li>
+        <li><div class="step-body">กด <strong>Save</strong></div></li>
+      </ol>
+
+      <h3>จัดการแผนก (Admin เท่านั้น)</h3>
+      <p>เพิ่ม/แก้ไข/ลบแผนกได้ที่ส่วน <strong>Departments</strong> ด้านล่างของหน้า Team แผนกที่สร้างจะแสดงเป็น Department Pills ใน Sidebar สำหรับกรองข้อมูล</p>
+
+      <h3>System Log (Admin & CEO)</h3>
+      <p>ด้านล่างสุดของหน้า Team แสดง Log การ Login ย้อนหลัง 7 วัน บันทึก Username, เวลา และ IP address โดย Log เก่ากว่า 7 วันจะถูกลบอัตโนมัติ</p>
+    </section>
+
+    <!-- 14. NOTIFICATIONS -->
+    <section class="section" id="notifications">
+      <h2><span class="num">14</span>การแจ้งเตือน (Notifications)</h2>
+      <p>ระบบสร้าง Notification อัตโนมัติเมื่อ:</p>
+      <ul style="color:var(--text-sub); padding-left:20px; line-height:2.2;">
+        <li>มีงานใหม่ที่ถูก Assign ให้คุณ</li>
+        <li>งานที่คุณเกี่ยวข้องมีการเปลี่ยน Status</li>
+        <li>งานใกล้ถึง Due date</li>
+        <li>มีการ Comment ในงานที่คุณรับผิดชอบ</li>
+      </ul>
+      <p>Badge ตัวเลขสีแดงบนเมนู Notifications แสดงจำนวนการแจ้งเตือนที่ยังไม่ได้อ่าน</p>
+    </section>
+
+    <hr class="divider">
+
+    <!-- 15. STATUS WORKFLOW -->
+    <section class="section" id="status">
+      <h2><span class="num">15</span>Status Workflow</h2>
+      <p>งานทุกชิ้นมี Status ดังนี้ และสามารถเปลี่ยนแบบ Cycle ได้ด้วยการคลิก Status Badge ในการ์ดงาน:</p>
+
+      <div class="status-row" style="margin-bottom:24px;">
+        <div class="status-pill s-backlog"><span class="dot"></span>Backlog</div>
+        <span style="color:var(--text-muted); align-self:center;">→</span>
+        <div class="status-pill s-inprogress"><span class="dot"></span>In Progress</div>
+        <span style="color:var(--text-muted); align-self:center;">→</span>
+        <div class="status-pill s-review"><span class="dot"></span>Review</div>
+        <span style="color:var(--text-muted); align-self:center;">→</span>
+        <div class="status-pill s-approve"><span class="dot"></span>Approved</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Status</th><th>ความหมาย</th><th class="center">Progress อัตโนมัติ</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="status-pill s-backlog" style="display:inline-flex;"><span class="dot"></span>Backlog</div></td>
+              <td>งานรอดำเนินการ ยังไม่เริ่ม</td>
+              <td class="center">ตาม Slider</td>
+            </tr>
+            <tr>
+              <td><div class="status-pill s-inprogress" style="display:inline-flex;"><span class="dot"></span>In Progress</div></td>
+              <td>กำลังดำเนินงานอยู่</td>
+              <td class="center">ตาม Slider</td>
+            </tr>
+            <tr>
+              <td><div class="status-pill s-review" style="display:inline-flex;"><span class="dot"></span>Review</div></td>
+              <td>รอตรวจสอบ/อนุมัติ</td>
+              <td class="center">ตาม Slider</td>
+            </tr>
+            <tr>
+              <td><div class="status-pill s-approve" style="display:inline-flex;"><span class="dot"></span>Approved</div></td>
+              <td>ผ่านการอนุมัติ สำเร็จ</td>
+              <td class="center"><span class="badge badge-yes">100% เสมอ</span></td>
+            </tr>
+            <tr>
+              <td><div class="status-pill s-hold" style="display:inline-flex;"><span class="dot"></span>On Hold</div></td>
+              <td>หยุดชั่วคราว/รอ</td>
+              <td class="center">ตาม Slider</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box info-tip">
+        <span class="icon">💡</span>
+        <p>เมื่อ Status เป็น <strong>Approved</strong> ค่า Progress จะเป็น 100% โดยอัตโนมัติ ไม่ว่า Slider จะตั้งไว้ที่เท่าไร</p>
+      </div>
+    </section>
+
+    <!-- 16. ATTACHMENTS -->
+    <section class="section" id="attachments">
+      <h2><span class="num">16</span>ไฟล์แนบ (Attachments)</h2>
+
+      <p>สามารถแนบไฟล์ได้ใน Task, Project, Meeting และ CEO Brief ไฟล์จะถูกบันทึกลง Database โดยตรง</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>รายละเอียด</th><th>ค่า</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ขนาดสูงสุดต่อไฟล์</td><td><strong>30 MB</strong></td></tr>
+            <tr><td>ขนาดแนะนำต่อไฟล์</td><td>ไม่เกิน 10 MB เพื่อประสิทธิภาพสูงสุด</td></tr>
+            <tr><td>ประเภทไฟล์</td><td>ทุกประเภท (PDF, Word, Excel, รูปภาพ, ฯลฯ)</td></tr>
+            <tr><td>ผู้ลบไฟล์แนบได้</td><td>Admin, CEO, Executive หรือผู้ที่อัปโหลดเท่านั้น</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box info-warn">
+        <span class="icon">⚠️</span>
+        <p>ไฟล์ขนาดใหญ่หลายไฟล์อาจทำให้ระบบโหลดช้า แนะนำใช้ไม่เกิน 10 MB ต่อไฟล์ และไม่เกิน 5 ไฟล์พร้อมกันต่อ Task</p>
+      </div>
+    </section>
+
+    <!-- 17. SECURITY -->
+    <section class="section" id="security">
+      <h2><span class="num">17</span>ความปลอดภัย</h2>
+
+      <div class="card">
+        <h4 style="margin-top:0;">มาตรการรักษาความปลอดภัยที่ใช้</h4>
+        <p>✅ <strong>Password Hashing</strong> — รหัสผ่านถูกเข้ารหัส bcrypt ก่อนบันทึกลง Database</p>
+        <p>✅ <strong>XSS Protection</strong> — ข้อมูลที่ User กรอกทั้งหมดผ่าน escapeHtml() ก่อนแสดงผล</p>
+        <p>✅ <strong>Session Isolation</strong> — Session หมดอายุเมื่อปิด Browser ไม่มีข้อมูลค้างใน Local Storage</p>
+        <p style="margin:0;">✅ <strong>Role-based Access</strong> — ทุก Action ตรวจสิทธิ์ Role ก่อนดำเนินการ</p>
+      </div>
+
+      <div class="info-box info-danger">
+        <span class="icon">🔐</span>
+        <p><strong>คำแนะนำสำหรับ Admin:</strong> ตั้งรหัสผ่านเริ่มต้นที่ซับซ้อน และแจ้งให้ User ทุกคนเปลี่ยนรหัสผ่านหลัง Login ครั้งแรก อย่าใช้รหัสผ่านเดียวกันหลาย Account</p>
+      </div>
+    </section>
+
+    <!-- 18. LIMITS -->
+    <section class="section" id="limits">
+      <h2><span class="num">18</span>ข้อจำกัดของระบบ</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>รายการ</th><th>ช่วงปลอดภัย</th><th>ขีดจำกัด</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>ผู้ใช้พร้อมกัน</td><td>20–50 คน</td><td>~200 คน</td></tr>
+            <tr><td>จำนวน Task ทั้งหมด</td><td>ไม่เกิน 5,000</td><td>~20,000</td></tr>
+            <tr><td>จำนวน User</td><td>ไม่เกิน 200</td><td>~1,000</td></tr>
+            <tr><td>ขนาดไฟล์แนบต่อไฟล์</td><td>ไม่เกิน 10 MB</td><td>30 MB</td></tr>
+            <tr><td>Bandwidth อัปโหลดต่อเดือน</td><td>ไม่เกิน 2 GB</td><td>2 GB (Free Tier)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box info-warn">
+        <span class="icon">⚠️</span>
+        <p>ระบบโหลดข้อมูลทั้งหมดตอนเริ่มต้น หาก Task มากกว่า 500+ ชิ้น การโหลดหน้าแรกอาจช้าลง กรุณาแจ้ง Admin เพื่อวางแผนเพิ่มประสิทธิภาพ</p>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <div class="doc-footer">
+      <div>Dire Wolf OS — คู่มือการใช้งาน v1.0.0</div>
+      <div>© 2026 Pap Saiyawong · Wolvester Marketing Co., Ltd.</div>
+      <div style="margin-top:6px; color: var(--text-muted);">เอกสารนี้จัดทำสำหรับใช้งานภายในองค์กรเท่านั้น</div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  // Highlight active TOC link on scroll
+  const sections = document.querySelectorAll('.section');
+  const links = document.querySelectorAll('.toc a');
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.toc a[href="#${e.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+
+  sections.forEach(s => observer.observe(s));
+</script>
+</body>
+</html>
