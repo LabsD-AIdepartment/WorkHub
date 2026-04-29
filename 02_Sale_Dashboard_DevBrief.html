@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sale Dashboard — Dev Brief</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #F2F2F7;
+    --surface: #FFFFFF;
+    --surface2: #F9F9FB;
+    --border: #E5E5EA;
+    --border2: #D1D1D6;
+    --text1: #1C1C1E;
+    --text2: #3A3A3C;
+    --text3: #636366;
+    --text4: #AEAEB2;
+    --accent: #0071E3;
+    --accent-light: #EBF4FF;
+    --green: #34C759;
+    --orange: #FF9500;
+    --red: #FF3B30;
+    --purple: #AF52DE;
+    --font: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text1);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  @media print {
+    body { background: white; }
+    .page { box-shadow: none; margin: 0; border-radius: 0; page-break-after: always; }
+    .page:last-child { page-break-after: avoid; }
+    @page { margin: 0; size: A4; }
+  }
+
+  .doc {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 16px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .page {
+    background: var(--surface);
+    border-radius: var(--radius);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    padding: 44px 52px;
+    min-height: 1050px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .page-content { flex: 1; }
+
+  /* ── HEADER ────────────────────────────── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+  .ph-left { display: flex; align-items: center; gap: 10px; }
+  .ph-tag {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    background: var(--accent);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+  .ph-title { font-size: 13px; font-weight: 600; color: var(--text2); }
+  .ph-right { font-size: 11px; color: var(--text4); }
+
+  /* ── COVER ──────────────────────────────── */
+  .cover-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  .cover-h1 {
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -0.8px;
+    line-height: 1.1;
+    color: var(--text1);
+    margin-bottom: 16px;
+  }
+  .cover-h1 em { font-style: normal; color: var(--accent); }
+  .cover-note {
+    font-size: 13px;
+    color: var(--text3);
+    font-weight: 300;
+    margin-bottom: 32px;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+
+  /* ── QUICK SPECS ────────────────────────── */
+  .quick-specs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .qs-row {
+    display: contents;
+  }
+  .qs-k {
+    background: var(--surface2);
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .qs-v {
+    background: var(--surface);
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text1);
+    font-family: var(--mono);
+  }
+
+  /* ── SECTION ────────────────────────────── */
+  .sec-head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    margin-top: 28px;
+  }
+  .sec-head:first-child { margin-top: 0; }
+  .sec-n {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-light);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .sec-title { font-size: 16px; font-weight: 700; color: var(--text1); letter-spacing: -0.2px; }
+
+  /* ── TABLE ──────────────────────────────── */
+  .tbl { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  .tbl th {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text4);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    text-align: left;
+    padding: 0 12px 8px;
+    border-bottom: 1.5px solid var(--border2);
+  }
+  .tbl td {
+    font-size: 12.5px;
+    color: var(--text2);
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  .tbl tr:last-child td { border-bottom: none; }
+  .tbl td.k { font-weight: 600; color: var(--text1); width: 160px; }
+  .tbl td.mono { font-family: var(--mono); font-size: 11.5px; color: var(--accent); }
+  .tbl td.dim { color: var(--text4); font-size: 11.5px; }
+  .tbl td.center { text-align: center; }
+
+  /* ── ENDPOINT LIST ──────────────────────── */
+  .ep-block { margin-bottom: 20px; }
+  .ep-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+  .ep-list { display: flex; flex-direction: column; gap: 4px; }
+  .ep-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    font-size: 12px;
+    padding: 6px 10px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .ep-method {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+  .ep-method.get { background: #EBF4FF; color: #0071E3; }
+  .ep-method.post { background: #F0FDF4; color: #16A34A; }
+  .ep-path { font-family: var(--mono); font-size: 11.5px; color: var(--text1); flex: 1; }
+  .ep-desc { font-size: 11.5px; color: var(--text4); }
+
+  /* ── SCHEMA BLOCK ───────────────────────── */
+  .schema-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+  .schema-name {
+    padding: 8px 14px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--accent);
+    background: var(--accent-light);
+    border-bottom: 1px solid var(--border);
+  }
+  .schema-fields {
+    display: grid;
+    grid-template-columns: 160px 120px 1fr;
+    gap: 0;
+  }
+  .sf-row { display: contents; }
+  .sf-row > span {
+    padding: 6px 14px;
+    font-size: 11.5px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sf-row:last-child > span { border-bottom: none; }
+  .sf-field { font-family: var(--mono); color: var(--text1); }
+  .sf-type { font-family: var(--mono); color: var(--purple); }
+  .sf-note { color: var(--text4); }
+
+  /* ── PRIORITY TAG ───────────────────────── */
+  .pri { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+  .pri.high { background: #FEF2F2; color: #DC2626; }
+  .pri.med  { background: #FFFBEB; color: #D97706; }
+  .pri.low  { background: #F0FDF4; color: #16A34A; }
+
+  /* ── RULE LIST ──────────────────────────── */
+  .rule-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 20px; }
+  .rule-item {
+    display: flex;
+    gap: 10px;
+    font-size: 12.5px;
+    color: var(--text2);
+    padding: 8px 12px;
+    background: var(--surface2);
+    border-radius: 6px;
+    border-left: 3px solid var(--border2);
+  }
+  .rule-item.accent { border-left-color: var(--accent); }
+  .rule-item.warn   { border-left-color: var(--orange); }
+  .rule-item.ok     { border-left-color: var(--green); }
+
+  /* ── PAGE FOOT ──────────────────────────── */
+  .page-footer {
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    margin-top: 32px;
+  }
+  .page-footer span { font-size: 11px; color: var(--text4); }
+
+  .divider { height: 1px; background: var(--border); margin: 24px 0; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* role color dots */
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 5px; vertical-align: middle; }
+</style>
+</head>
+<body>
+<div class="doc">
+
+<!-- ═══════════════════════════════════════════
+     PAGE 1 — COVER + QUICK SPECS
+═══════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="page-header">
+      <div class="ph-left">
+        <span class="ph-tag">Dev Brief</span>
+        <span class="ph-title">Sale Dashboard Monitoring System</span>
+      </div>
+      <div class="ph-right">v1.0 · เมษายน 2568 · Confidential</div>
+    </div>
+
+    <div class="cover-tag">Technical Requirements</div>
+    <div class="cover-h1">Sale Dashboard<br><em>Dev Brief</em></div>
+    <div class="cover-note">สรุป Spec สำหรับ Developer — ไม่มี Guideline ไม่มีอธิบาย ครบในหน้าเดียว</div>
+
+    <div class="quick-specs">
+      <div class="qs-k">Platforms</div>
+      <div class="qs-v">Meta Ads, Shopee, Lazada, TikTok, Internal DB, Google Sheet</div>
+      <div class="qs-k">Meta Ad Accounts</div>
+      <div class="qs-v">22 (ปัจจุบัน) → รองรับสูงสุด 25 บัญชี</div>
+      <div class="qs-k">Marketplace Stores</div>
+      <div class="qs-v">Shopee 6 · Lazada 5 · TikTok 3 = รวม 14 ร้าน</div>
+      <div class="qs-k">Dashboard Modules</div>
+      <div class="qs-v">5 (Overview · Ads Meta · Marketplace · Team Sale · Product)</div>
+      <div class="qs-k">User Roles</div>
+      <div class="qs-v">Admin · CEO · Executive · Marketing · SaleTeam · Guest</div>
+      <div class="qs-k">Data Range</div>
+      <div class="qs-v">ไม่เกิน 1 เดือนย้อนหลัง</div>
+      <div class="qs-k">Auth</div>
+      <div class="qs-v">Username / Password → JWT (bcrypt hash)</div>
+      <div class="qs-k">COGS Source</div>
+      <div class="qs-v">Google Sheets API v4 — Auto sync daily + Manual trigger</div>
+      <div class="qs-k">Timeline</div>
+      <div class="qs-v">4 สัปดาห์</div>
+    </div>
+
+    <div class="sec-head">
+      <span class="sec-n">STACK</span>
+      <span class="sec-title">Tech Stack</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Layer</th><th>Technology</th><th>Note</th></tr></thead>
+      <tbody>
+        <tr><td class="k">Frontend</td><td class="mono">React + TypeScript + Vite</td><td class="dim">ERP compatible</td></tr>
+        <tr><td class="k">UI</td><td class="mono">Tailwind CSS + shadcn/ui</td><td class="dim"></td></tr>
+        <tr><td class="k">Charts</td><td class="mono">Recharts / Apache ECharts</td><td class="dim"></td></tr>
+        <tr><td class="k">Backend</td><td class="mono">FastAPI (Python)</td><td class="dim">Async, REST</td></tr>
+        <tr><td class="k">Queue</td><td class="mono">Celery + Redis</td><td class="dim">Daily sync jobs</td></tr>
+        <tr><td class="k">Database</td><td class="mono">PostgreSQL</td><td class="dim">Central DB, Row-level Security</td></tr>
+        <tr><td class="k">Cache</td><td class="mono">Redis</td><td class="dim">API response cache</td></tr>
+        <tr><td class="k">Auth</td><td class="mono">JWT + bcrypt</td><td class="dim">Stateless, SSO-ready</td></tr>
+        <tr><td class="k">Scheduler</td><td class="mono">Celery Beat</td><td class="dim">Cron-based daily pull</td></tr>
+        <tr><td class="k">Container</td><td class="mono">Docker + Docker Compose</td><td class="dim">ERP deploy ready</td></tr>
+        <tr><td class="k">Hosting</td><td class="mono">GCP Cloud Run / On-premise</td><td class="dim">TBD</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="page-footer">
+    <span>Sale Dashboard — Dev Brief</span>
+    <span>Page 1</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 2 — DATA SOURCES & SYNC
+═══════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="page-header">
+      <div class="ph-left"><span class="ph-tag">Dev Brief</span><span class="ph-title">Data Sources & Sync</span></div>
+      <div class="ph-right">v1.0</div>
+    </div>
+
+    <div class="sec-head" style="margin-top:0">
+      <span class="sec-n">DATA</span>
+      <span class="sec-title">Data Sources & Sync Schedule</span>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr><th>Source</th><th>API / Method</th><th>Data ที่ดึง</th><th>Frequency</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="k">Meta Ads</td>
+          <td class="mono">Meta Marketing API</td>
+          <td>Spend, Impression, Click, Conversion, CPR, CPA, ROAS</td>
+          <td class="dim">Daily 06:00 + On-demand<br>Parallel 22 accounts</td>
+        </tr>
+        <tr>
+          <td class="k">Shopee (6)</td>
+          <td class="mono">Shopee Open Platform API</td>
+          <td>GMV, Orders, Ads Spend, Platform Fee, Click, CVR</td>
+          <td class="dim">Daily 06:30</td>
+        </tr>
+        <tr>
+          <td class="k">Lazada (5)</td>
+          <td class="mono">Lazada Open Platform API</td>
+          <td>GMV, Orders, Ads Spend, Platform Fee, Click, CVR</td>
+          <td class="dim">Daily 07:00</td>
+        </tr>
+        <tr>
+          <td class="k">TikTok (3)</td>
+          <td class="mono">TikTok Shop API</td>
+          <td>GMV, Orders, Ads Spend, Platform Fee, Click, CVR</td>
+          <td class="dim">Daily 07:30</td>
+        </tr>
+        <tr>
+          <td class="k">Internal Order DB</td>
+          <td class="mono">Direct DB / Webhook <span class="pri med">TBC</span></td>
+          <td>Orders, Products, Team, Revenue</td>
+          <td class="dim">Every 15 min<br>หรือ Real-time</td>
+        </tr>
+        <tr>
+          <td class="k">Google Sheet (COGS)</td>
+          <td class="mono">Google Sheets API v4</td>
+          <td>ต้นทุนสินค้า (COGS) per SKU</td>
+          <td class="dim">Daily 08:00<br>+ Manual trigger</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="sec-head">
+      <span class="sec-n">SCHEMA</span>
+      <span class="sec-title">Database Schema (Central PostgreSQL)</span>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="schema-block">
+          <div class="schema-name">platforms</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">name</span><span class="sf-type">varchar</span><span class="sf-note">facebook, shopee, lazada, tiktok</span></div>
+          </div>
+        </div>
+        <div class="schema-block">
+          <div class="schema-name">stores</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">platform_id</span><span class="sf-type">uuid</span><span class="sf-note">FK → platforms</span></div>
+            <div class="sf-row"><span class="sf-field">name</span><span class="sf-type">varchar</span><span class="sf-note">ชื่อร้าน</span></div>
+            <div class="sf-row"><span class="sf-field">external_id</span><span class="sf-type">varchar</span><span class="sf-note">Platform store ID</span></div>
+          </div>
+        </div>
+        <div class="schema-block">
+          <div class="schema-name">ad_accounts</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">account_id</span><span class="sf-type">varchar</span><span class="sf-note">Meta Account ID</span></div>
+            <div class="sf-row"><span class="sf-field">name</span><span class="sf-type">varchar</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">access_token</span><span class="sf-type">text</span><span class="sf-note">encrypted</span></div>
+          </div>
+        </div>
+        <div class="schema-block">
+          <div class="schema-name">products</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">sku</span><span class="sf-type">varchar</span><span class="sf-note">unique</span></div>
+            <div class="sf-row"><span class="sf-field">name</span><span class="sf-type">varchar</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">cogs</span><span class="sf-type">numeric</span><span class="sf-note">sync จาก Google Sheet</span></div>
+            <div class="sf-row"><span class="sf-field">cogs_updated_at</span><span class="sf-type">timestamptz</span><span class="sf-note"></span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="schema-block">
+          <div class="schema-name">orders</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">platform_id</span><span class="sf-type">uuid</span><span class="sf-note">FK</span></div>
+            <div class="sf-row"><span class="sf-field">store_id</span><span class="sf-type">uuid</span><span class="sf-note">FK</span></div>
+            <div class="sf-row"><span class="sf-field">product_id</span><span class="sf-type">uuid</span><span class="sf-note">FK</span></div>
+            <div class="sf-row"><span class="sf-field">team_id</span><span class="sf-type">uuid</span><span class="sf-note">FK → teams</span></div>
+            <div class="sf-row"><span class="sf-field">revenue</span><span class="sf-type">numeric</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">promotion</span><span class="sf-type">varchar</span><span class="sf-note">nullable</span></div>
+            <div class="sf-row"><span class="sf-field">ordered_at</span><span class="sf-type">timestamptz</span><span class="sf-note"></span></div>
+          </div>
+        </div>
+        <div class="schema-block">
+          <div class="schema-name">ads_daily</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">ad_account_id</span><span class="sf-type">uuid</span><span class="sf-note">FK</span></div>
+            <div class="sf-row"><span class="sf-field">product_id</span><span class="sf-type">uuid</span><span class="sf-note">FK, nullable</span></div>
+            <div class="sf-row"><span class="sf-field">date</span><span class="sf-type">date</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">spend</span><span class="sf-type">numeric</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">clicks</span><span class="sf-type">integer</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">conversions</span><span class="sf-type">integer</span><span class="sf-note"></span></div>
+          </div>
+        </div>
+        <div class="schema-block">
+          <div class="schema-name">marketplace_daily</div>
+          <div class="schema-fields">
+            <div class="sf-row"><span class="sf-field">id</span><span class="sf-type">uuid</span><span class="sf-note">PK</span></div>
+            <div class="sf-row"><span class="sf-field">store_id</span><span class="sf-type">uuid</span><span class="sf-note">FK</span></div>
+            <div class="sf-row"><span class="sf-field">date</span><span class="sf-type">date</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">gmv</span><span class="sf-type">numeric</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">orders_count</span><span class="sf-type">integer</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">ads_spend</span><span class="sf-type">numeric</span><span class="sf-note"></span></div>
+            <div class="sf-row"><span class="sf-field">platform_fee</span><span class="sf-type">numeric</span><span class="sf-note">จาก API หรือ gmv×0.25</span></div>
+            <div class="sf-row"><span class="sf-field">clicks</span><span class="sf-type">integer</span><span class="sf-note"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Sale Dashboard — Dev Brief</span>
+    <span>Page 2</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 3 — MODULES SPEC
+═══════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="page-header">
+      <div class="ph-left"><span class="ph-tag">Dev Brief</span><span class="ph-title">Module Specifications</span></div>
+      <div class="ph-right">v1.0</div>
+    </div>
+
+    <div class="sec-head" style="margin-top:0">
+      <span class="sec-n">MODULES</span>
+      <span class="sec-title">Module Specifications — 5 Modules</span>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr><th>Module</th><th>Metrics / Features</th><th>Filters</th><th>Permission</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="k">M1 Overview</td>
+          <td>GMV รวม, สัดส่วน Platform (%), Total Ads Spend, ROAS, ROI, AOV, Cost per Order, Date Range</td>
+          <td>Facebook / Marketplace / All, Date (≤30d)</td>
+          <td class="dim">All roles</td>
+        </tr>
+        <tr>
+          <td class="k">M2 Ads Meta</td>
+          <td>Total Spend, Spend/Account, Spend/Product, Click (Message), Click/Account, Click/Product, Conversion, CVR, ROAS, CPR, CPA</td>
+          <td>Account, Product, Date</td>
+          <td class="dim">Admin CEO Exec Marketing</td>
+        </tr>
+        <tr>
+          <td class="k">M3 Marketplace</td>
+          <td>GMV รวม/แยก, Ads Spend, Orders, AOV, ROAS, ROI, Click, CVR, Platform Fee (API หรือ 25%)</td>
+          <td>Platform (all/shopee/lazada/tiktok), Store, Date</td>
+          <td class="dim">Admin CEO Exec Marketing</td>
+        </tr>
+        <tr>
+          <td class="k">M4 Team Sale</td>
+          <td>CVR รวม, CVR/Team, CVR/Product, Revenue รวม, Revenue/Team</td>
+          <td>Team (row-level), Date</td>
+          <td class="dim">Admin CEO Exec = all teams<br>SaleTeam = own team only</td>
+        </tr>
+        <tr>
+          <td class="k">M5 Product</td>
+          <td>Order List, Revenue/SKU, Promotion Rank List, COGS, Gross Margin %</td>
+          <td>Facebook / Marketplace, SKU, Date</td>
+          <td class="dim">All except Guest</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="sec-head">
+      <span class="sec-n">KPI</span>
+      <span class="sec-title">KPI Formulas</span>
+    </div>
+
+    <table class="tbl">
+      <thead>
+        <tr><th width="80">KPI</th><th>Formula</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">GMV</td><td>SUM(revenue) — ก่อนหักค่าใช้จ่าย</td></tr>
+        <tr><td class="mono">ROAS</td><td>revenue / ads_spend</td></tr>
+        <tr><td class="mono">ROI</td><td>(revenue - total_cost) / total_cost × 100</td></tr>
+        <tr><td class="mono">AOV</td><td>revenue / orders_count</td></tr>
+        <tr><td class="mono">CVR</td><td>conversions / clicks × 100</td></tr>
+        <tr><td class="mono">CPR</td><td>ads_spend / conversions</td></tr>
+        <tr><td class="mono">CPA</td><td>ads_spend / clicks</td></tr>
+        <tr><td class="mono">Platform Fee</td><td>fee จาก API — ถ้าไม่มีใช้ gmv × 0.25</td></tr>
+        <tr><td class="mono">Gross Margin</td><td>revenue - cogs</td></tr>
+      </tbody>
+    </table>
+
+    <div class="divider"></div>
+
+    <div class="sec-head">
+      <span class="sec-n">API</span>
+      <span class="sec-title">API Endpoints (Backend)</span>
+    </div>
+
+    <div class="ep-block">
+      <div class="ep-title">Auth</div>
+      <div class="ep-list">
+        <div class="ep-row"><span class="ep-method post">POST</span><span class="ep-path">/auth/login</span><span class="ep-desc">username + password → JWT token</span></div>
+        <div class="ep-row"><span class="ep-method post">POST</span><span class="ep-path">/auth/refresh</span><span class="ep-desc">refresh JWT</span></div>
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/auth/me</span><span class="ep-desc">current user + role</span></div>
+      </div>
+    </div>
+    <div class="ep-block">
+      <div class="ep-title">Dashboard</div>
+      <div class="ep-list">
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/dashboard/overview</span><span class="ep-desc">?date_from&date_to&platform</span></div>
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/dashboard/ads-meta</span><span class="ep-desc">?account_id&product_id&date_from&date_to</span></div>
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/dashboard/marketplace</span><span class="ep-desc">?platform&store_id&date_from&date_to</span></div>
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/dashboard/team-sale</span><span class="ep-desc">?team_id&date_from&date_to (row-level filtered)</span></div>
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/dashboard/products</span><span class="ep-desc">?platform&sku&date_from&date_to</span></div>
+      </div>
+    </div>
+    <div class="ep-block">
+      <div class="ep-title">Admin</div>
+      <div class="ep-list">
+        <div class="ep-row"><span class="ep-method get">GET</span><span class="ep-path">/admin/users</span><span class="ep-desc">list users — Admin only</span></div>
+        <div class="ep-row"><span class="ep-method post">POST</span><span class="ep-path">/admin/users</span><span class="ep-desc">create user — Admin only</span></div>
+        <div class="ep-row"><span class="ep-method post">POST</span><span class="ep-path">/admin/sync/cogs</span><span class="ep-desc">manual trigger Google Sheet sync</span></div>
+        <div class="ep-row"><span class="ep-method post">POST</span><span class="ep-path">/admin/sync/platform/{name}</span><span class="ep-desc">manual trigger platform sync</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="page-footer">
+    <span>Sale Dashboard — Dev Brief</span>
+    <span>Page 3</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     PAGE 4 — AUTH, ACCESS CONTROL, RULES
+═══════════════════════════════════════════ -->
+<div class="page">
+  <div class="page-content">
+    <div class="page-header">
+      <div class="ph-left"><span class="ph-tag">Dev Brief</span><span class="ph-title">Auth & Access Control</span></div>
+      <div class="ph-right">v1.0</div>
+    </div>
+
+    <div class="sec-head" style="margin-top:0">
+      <span class="sec-n">AUTH</span>
+      <span class="sec-title">Authentication Rules</span>
+    </div>
+    <div class="rule-list">
+      <div class="rule-item accent">Login: Username + Password → bcrypt verify → return JWT (expire 8h)</div>
+      <div class="rule-item accent">ทุก API request ต้องมี Authorization: Bearer {token} header</div>
+      <div class="rule-item accent">Admin สามารถ CRUD users + assign/change role ทุก role รวมถึง Admin</div>
+      <div class="rule-item ok">Refresh token endpoint สำหรับ extend session</div>
+      <div class="rule-item ok">เตรียม OAuth2 flow สำหรับ SSO ในอนาคต (อย่า hardcode auth logic)</div>
+    </div>
+
+    <div class="sec-head">
+      <span class="sec-n">ROLES</span>
+      <span class="sec-title">Role-based Access Matrix</span>
+    </div>
+    <table class="tbl">
+      <thead>
+        <tr><th>Role</th><th>M1 Overview</th><th>M2 Ads Meta</th><th>M3 Marketplace</th><th>M4 Team Sale</th><th>M5 Product</th><th>Admin Panel</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="dot" style="background:#DC2626"></span><strong>Admin</strong></td>
+          <td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓ All</td><td class="center">✓</td><td class="center">✓</td>
+        </tr>
+        <tr>
+          <td><span class="dot" style="background:#0071E3"></span>CEO</td>
+          <td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓ All</td><td class="center">✓</td><td class="center">–</td>
+        </tr>
+        <tr>
+          <td><span class="dot" style="background:#0071E3"></span>Executive</td>
+          <td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">✓ All</td><td class="center">✓</td><td class="center">–</td>
+        </tr>
+        <tr>
+          <td><span class="dot" style="background:#FF9500"></span>Marketing</td>
+          <td class="center">✓</td><td class="center">✓</td><td class="center">✓</td><td class="center">–</td><td class="center">✓</td><td class="center">–</td>
+        </tr>
+        <tr>
+          <td><span class="dot" style="background:#34C759"></span>SaleTeam</td>
+          <td class="center">✓</td><td class="center">–</td><td class="center">–</td><td class="center">✓ Own</td><td class="center">✓</td><td class="center">–</td>
+        </tr>
+        <tr>
+          <td><span class="dot" style="background:#AEAEB2"></span>Guest</td>
+          <td class="center">✓ Agg</td><td class="center">–</td><td class="center">–</td><td class="center">–</td><td class="center">–</td><td class="center">–</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="rule-list">
+      <div class="rule-item warn">SaleTeam: filter WHERE team_id = {user.team_id} ใน Backend — ไม่ใช้ Frontend filter</div>
+      <div class="rule-item warn">Guest: return aggregated data เท่านั้น ไม่ return breakdown rows</div>
+      <div class="rule-item warn">ทุก endpoint ตรวจ role ใน middleware ก่อน handler — ไม่ bypass ใน Frontend</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec-head">
+      <span class="sec-n">ISSUES</span>
+      <span class="sec-title">Open Issues — ต้อง Confirm ก่อน Week 1</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>#</th><th>Issue</th><th>ต้องการ</th><th>Pri</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="dim">01</td>
+          <td class="k">Internal Order System</td>
+          <td>DB Type, Schema หลัก, วิธีเข้าถึง (Direct DB / API Layer)</td>
+          <td><span class="pri high">HIGH</span></td>
+        </tr>
+        <tr>
+          <td class="dim">02</td>
+          <td class="k">Meta Conversion Event</td>
+          <td>Lead (ทักข้อความ) หรือ Purchase หรือทั้งคู่แยก event?</td>
+          <td><span class="pri high">HIGH</span></td>
+        </tr>
+        <tr>
+          <td class="dim">03</td>
+          <td class="k">Store Name Mapping</td>
+          <td>ชื่อร้านจริง Shopee×6 / Lazada×5 / TikTok×3 + Platform store_id</td>
+          <td><span class="pri med">MED</span></td>
+        </tr>
+        <tr>
+          <td class="dim">04</td>
+          <td class="k">ERP Tech Stack</td>
+          <td>Framework & DB ของ ERP เพื่อวางแผน Shared Auth + Schema</td>
+          <td><span class="pri med">MED</span></td>
+        </tr>
+        <tr>
+          <td class="dim">05</td>
+          <td class="k">Platform Fee API</td>
+          <td>API คืน fee จริงได้ไหม? ถ้าได้ใช้แทน fallback 25%</td>
+          <td><span class="pri low">LOW</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="sec-head">
+      <span class="sec-n">PHASE</span>
+      <span class="sec-title">Sprint Plan</span>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Week</th><th>Phase</th><th>Deliverable</th></tr></thead>
+      <tbody>
+        <tr><td class="mono" style="color:#0071E3">Week 1</td><td class="k">Setup & Foundation</td><td class="dim">Docker, DB Schema, Auth JWT, Google Sheet Sync</td></tr>
+        <tr><td class="mono" style="color:#16A34A">Week 2</td><td class="k">Data Integration</td><td class="dim">Meta API (22 accounts), Shopee/Lazada/TikTok API, Internal DB, Celery jobs</td></tr>
+        <tr><td class="mono" style="color:#D97706">Week 3</td><td class="k">Dashboard Frontend</td><td class="dim">5 Modules, Charts, KPI Cards, Role-based views, Filters</td></tr>
+        <tr><td class="mono" style="color:#DC2626">Week 4</td><td class="k">Finish & Deploy</td><td class="dim">Row-level security, Cache tuning, UAT, Production deploy</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="page-footer">
+    <span>Sale Dashboard — Dev Brief</span>
+    <span>Page 4 · End of Document</span>
+  </div>
+</div>
+
+</div>
+</body>
+</html>
