@@ -1,10 +1,14 @@
 window.DireWolfConfig = {
-  appName: 'Dire Wolf OS',
+  appName: 'Dire Wolves OS',
   version: 'Rebuild 1',
   supabase: {
     baseUrl: 'https://ubrsapnarwisgpruxszp.supabase.co/rest/v1',
+    functionsUrl: 'https://ubrsapnarwisgpruxszp.supabase.co/functions/v1',
     anonKey: 'sb_publishable_QRAa9gVy92V7gp2k3WOGMg_3kxK-ANF',
     enabled: true,
+  },
+  integrations: {
+    googleCalendarSyncSecret: 'dire-wolves-calendar-sync-20260506',
   },
   roles: {
     admin: { label: 'Admin', rank: 1, color: '#7c3aed' },
