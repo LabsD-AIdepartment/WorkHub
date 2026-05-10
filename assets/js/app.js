@@ -63,6 +63,13 @@
       images: [],
       documents: [],
       fileHint: '',
+      session: {
+        consentGiven: false,
+        workspaceContext: null,   // cached JSON string — built once per session
+        contextImages: [],        // approved project images (base64), cached
+        contextDocuments: [],     // approved PDF texts, cached
+        approvedFileIds: [],
+      },
     },
   };
 
@@ -2940,6 +2947,7 @@
 
   function logout() {
     clearSession();
+    resetAiSession();
     DOM.appShell.classList.add('hidden');
     DOM.loginScreen.classList.remove('hidden');
     DOM.loginIdentifier.value = '';
@@ -3011,9 +3019,14 @@
     state.ai.history = [];
     state.ai.status = '';
     state.ai.statusSteps = [];
+    resetAiSession();
     if (renderTarget === 'global') openGlobalAiPanel();
     else if (renderTarget === 'project') renderProjectPage();
     else renderAiPage();
+  }
+
+  function resetAiSession() {
+    state.ai.session = { consentGiven: false, workspaceContext: null, contextImages: [], contextDocuments: [], approvedFileIds: [] };
   }
 
   function closeModal() {
@@ -7734,7 +7747,9 @@
     const key = getAiKey();
     if (!key) return 'BYOK is not connected';
     const mode = settings.persistKey ? 'stored in this browser' : 'stored for this tab session';
-    return `${settings.model} ready, key ${mode}`;
+    const session = state.ai.session || {};
+    const sessionNote = session.consentGiven ? ' · session active' : '';
+    return `${settings.model} ready, key ${mode}${sessionNote}`;
   }
 
   function workspaceAiContext(mode = 'full') {
@@ -8701,13 +8716,36 @@
   }
 
   function aiHistoryMessagesForModel() {
-    const turns = (state.ai.history || []).slice(0, -1).slice(-8);
-    return turns
+    const session = state.ai.session || {};
+    const preamble = [];
+
+    // Inject cached workspace context as the first synthetic turn — never trimmed
+    if (session.workspaceContext) {
+      const ctxText = `[Session workspace context — reference this for all questions in this session]\n\nWorkspace JSON:\n${session.workspaceContext}`;
+      const ctxContent = session.contextImages?.length
+        ? [{ type: 'text', text: ctxText }, ...session.contextImages.map((img) => ({ type: 'image_url', image_url: { url: img.dataUrl } }))]
+        : ctxText;
+      preamble.push({ role: 'user', content: ctxContent });
+      preamble.push({ role: 'assistant', content: 'Workspace context loaded. I will reference this data throughout our session without you needing to resend it.' });
+    }
+
+    // Inject cached document texts as a second synthetic turn
+    if (session.contextDocuments?.length) {
+      const docText = `[Session document context]\n\n${session.contextDocuments.map((d) => `--- ${d.name} (${d.pageCount || '?'} pages) ---\n${d.text}`).join('\n\n')}`;
+      preamble.push({ role: 'user', content: docText });
+      preamble.push({ role: 'assistant', content: 'Documents loaded.' });
+    }
+
+    // Real conversation history (trimmed for token budget)
+    const turns = (state.ai.history || []).slice(0, -1).slice(-10);
+    const historyMessages = turns
       .filter((turn) => turn.text)
       .map((turn) => ({
         role: turn.role === 'user' ? 'user' : 'assistant',
         content: trimAiTextForHistory(turn.text, 1200),
       }));
+
+    return [...preamble, ...historyMessages];
   }
 
   function parseAiActionBlock(content) {
@@ -9454,63 +9492,82 @@
       else renderAiPage();
       return;
     }
-    // ── Consent step: show before touching any data ──────────────────────
+    // ── Consent: once per session ────────────────────────────────────────
     const _consentData = buildAiConsentData(options);
-    let _approvedFileIds = [];
-    try {
-      const consent = await showAiConsentModal(_consentData);
-      _approvedFileIds = consent.approvedFileIds || [];
-    } catch {
-      return; // user cancelled or closed modal
+    let _approvedFileIds = state.ai.session?.approvedFileIds || [];
+    if (!state.ai.session?.consentGiven) {
+      try {
+        const consent = await showAiConsentModal(_consentData);
+        _approvedFileIds = consent.approvedFileIds || [];
+        state.ai.session.consentGiven = true;
+        state.ai.session.approvedFileIds = _approvedFileIds;
+      } catch {
+        return; // user cancelled or closed modal
+      }
     }
-    // ─────────────────────────────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────────────
     state.ai.loading = true;
     state.ai.error = '';
     state.ai.pendingActions = [];
     state.ai.lastPrompt = prompt;
     state.ai.lastTitle = options.title || 'AI result';
     pushAiHistoryTurn('user', aiPromptEchoText(prompt) || prompt, 'You');
-    updateAiStatus('Preparing workspace context', ['Preparing workspace context']);
+    updateAiStatus('Preparing context', ['Preparing context']);
     if (options.renderTarget === 'global') openGlobalAiPanel();
     else if (options.renderTarget === 'project') renderProjectPage();
     else renderAiPage();
     try {
-      const context = options.contextMode === 'active-page'
-        ? activePageAiContext()
-        : workspaceAiContext(options.contextMode || 'full');
-      updateAiStatus('Packaging prompt and attachments', ['Preparing workspace context', 'Packaging prompt and attachments']);
-      if (options.renderTarget === 'global') openGlobalAiPanel();
-      else if (options.renderTarget === 'project') renderProjectPage();
-      else renderAiPage();
-      const userText = `${prompt}\n\nWorkspace JSON:\n${JSON.stringify(context, null, 2)}`;
-      const images = Array.isArray(options.images) ? [...options.images] : [];
-      const documents = Array.isArray(options.documents) ? [...options.documents] : [];
-      // Fetch content of project files approved by user
-      if (_approvedFileIds.length) {
-        updateAiStatus('Fetching approved project files', ['Preparing workspace context', 'Packaging prompt and attachments', 'Fetching approved project files']);
+      const session = state.ai.session;
+
+      // ── First call: build + cache workspace context & files ────────────
+      if (!session.workspaceContext) {
+        updateAiStatus('Loading workspace context', ['Loading workspace context']);
         if (options.renderTarget === 'global') openGlobalAiPanel();
         else if (options.renderTarget === 'project') renderProjectPage();
         else renderAiPage();
-        const fetched = await fetchApprovedFiles(_approvedFileIds, _consentData.projectFiles);
-        images.push(...fetched.images);
-        documents.push(...fetched.documents);
+        const context = options.contextMode === 'active-page'
+          ? activePageAiContext()
+          : workspaceAiContext(options.contextMode || 'full');
+        session.workspaceContext = JSON.stringify(context, null, 2);
       }
+
+      if (_approvedFileIds.length && !session.contextImages.length && !session.contextDocuments.length) {
+        updateAiStatus('Fetching approved project files', ['Loading workspace context', 'Fetching approved project files']);
+        if (options.renderTarget === 'global') openGlobalAiPanel();
+        else if (options.renderTarget === 'project') renderProjectPage();
+        else renderAiPage();
+        const fetched = await fetchApprovedFiles(_approvedFileIds, _consentData?.projectFiles || []);
+        session.contextImages = fetched.images;
+        session.contextDocuments = fetched.documents;
+        session.approvedFileIds = _approvedFileIds;
+      }
+      // ── Subsequent calls: context already cached, skip rebuild ──────────
+
+      updateAiStatus('Packaging prompt', ['Loading workspace context', 'Packaging prompt']);
+      if (options.renderTarget === 'global') openGlobalAiPanel();
+      else if (options.renderTarget === 'project') renderProjectPage();
+      else renderAiPage();
+
+      // Per-call manually attached files (user added via screenshot/PDF upload this turn only)
+      const images = Array.isArray(options.images) ? [...options.images] : [];
+      const documents = Array.isArray(options.documents) ? [...options.documents] : [];
+      // User message is just the prompt — context lives in session preamble (aiHistoryMessagesForModel)
       const documentText = documents.length
         ? `\n\nAttached PDF reference text (do not summarize or repeat unless explicitly requested):\n${documents.map((doc) => `--- ${doc.name} (${doc.pageCount || '?'} pages) ---\n${doc.text}`).join('\n\n')}`
         : '';
       const attachmentRule = images.length || documents.length
         ? '\n\nAttachment handling rule: answer the user request directly. Do not list, restate, or summarize attached content unless the request asks for that.'
         : '';
-      const userTextWithDocs = `${userText}${attachmentRule}${documentText}`;
+      const userText = `${prompt}${attachmentRule}${documentText}`;
       const userContent = images.length
         ? [
-          { type: 'text', text: userTextWithDocs },
+          { type: 'text', text: userText },
           ...images.map((image) => ({
             type: 'image_url',
             image_url: { url: image.dataUrl },
           })),
         ]
-        : userTextWithDocs;
+        : userText;
       updateAiStatus('Sending request to model', ['Preparing workspace context', 'Packaging prompt and attachments', `Sending request to ${settings.model}`]);
       if (options.renderTarget === 'global') openGlobalAiPanel();
       else if (options.renderTarget === 'project') renderProjectPage();
