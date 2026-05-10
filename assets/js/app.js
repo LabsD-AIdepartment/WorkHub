@@ -204,6 +204,12 @@
     };
     writeLocal(storageKeys.aiSettings, next);
     state.ai.settings = next;
+    const user = currentUser();
+    if (user) {
+      user.aiSettings = next;
+      queueRemoteUpsert('user', user);
+      saveSnapshot();
+    }
     return next;
   }
 
@@ -218,11 +224,23 @@
     if (!key) return;
     const target = persist ? localStorage : sessionStorage;
     target.setItem(storageKeys.aiKey, key);
+    const user = currentUser();
+    if (user) {
+      user.aiKey = key;
+      queueRemoteUpsert('user', user);
+      saveSnapshot();
+    }
   }
 
   function clearAiKey() {
     localStorage.removeItem(storageKeys.aiKey);
     sessionStorage.removeItem(storageKeys.aiKey);
+    const user = currentUser();
+    if (user) {
+      user.aiKey = null;
+      queueRemoteUpsert('user', user);
+      saveSnapshot();
+    }
   }
 
   function hasMockData(snapshot) {
@@ -1762,6 +1780,8 @@
       level_rank: roleRank(access),
       is_active: user.status !== 'offline',
       created_at: user.createdAt || nowIso(),
+      ai_settings: user.aiSettings || null,
+      ai_key: user.aiKey || null,
     };
   }
 
@@ -1836,6 +1856,8 @@
       status: row.status || 'offline',
       color: row.color || '#6d28d9',
       createdAt: row.created_at || row.createdAt || '',
+      aiSettings: (() => { try { const s = row.ai_settings; return (s && typeof s === 'object') ? s : (typeof s === 'string' ? JSON.parse(s) : null); } catch { return null; } })(),
+      aiKey: row.ai_key || null,
     };
   }
 
@@ -2870,6 +2892,16 @@
     }
 
     saveSession(user.id);
+    // Restore per-user AI settings + key from DB
+    if (user.aiSettings && typeof user.aiSettings === 'object') {
+      writeLocal(storageKeys.aiSettings, { ...defaultAiSettings(), ...user.aiSettings });
+      state.ai.settings = getAiSettings();
+    }
+    if (user.aiKey) {
+      const persist = !!(user.aiSettings?.persistKey);
+      const target = persist ? localStorage : sessionStorage;
+      target.setItem(storageKeys.aiKey, user.aiKey);
+    }
     closeDrawer();
     closeModal();
     closeSidebar();
