@@ -8464,7 +8464,8 @@
           <form class="ai-settings-form" data-ai-settings-form>
             <label class="field full">
               <span>OpenAI-compatible endpoint</span>
-              <input name="endpoint" type="url" value="${escapeHtml(settings.endpoint)}" placeholder="https://api.openai.com/v1/chat/completions">
+              <input name="endpoint" type="url" value="${escapeHtml(settings.endpoint)}" placeholder="https://openrouter.ai/api/v1/chat/completions">
+              ${settings.endpoint.includes('openai.com') ? `<span class="field-hint field-hint-warn">OpenAI's API blocks browser requests (CORS). Use OpenRouter: <code>https://openrouter.ai/api/v1/chat/completions</code></span>` : ''}
             </label>
             <label class="field">
               <span>Model</span>
@@ -9376,7 +9377,12 @@
       if (error?.name === 'AbortError') {
         errMsg = 'Request timed out (45s). The endpoint may be unreachable or very slow.';
       } else if (errMsg === 'Failed to fetch' || errMsg === 'NetworkError when attempting to fetch resource.') {
-        errMsg = 'Network error — could not reach the AI endpoint. Check: (1) the endpoint URL in AI Settings, (2) your API key, (3) that the service allows browser requests (CORS).';
+        const ep = (settings.endpoint || '').toLowerCase();
+        if (ep.includes('openai.com')) {
+          errMsg = 'OpenAI\'s API blocks browser calls (CORS). Switch your endpoint to OpenRouter: https://openrouter.ai/api/v1/chat/completions — go to AI Settings to update it.';
+        } else {
+          errMsg = 'Could not reach the AI endpoint. Check the URL in AI Settings and make sure the service supports browser (CORS) requests.';
+        }
       }
       state.ai.error = errMsg;
       showToast('AI request failed', errMsg);
