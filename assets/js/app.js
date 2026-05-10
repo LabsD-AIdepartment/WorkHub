@@ -9318,11 +9318,25 @@
       if (options.renderTarget === 'global') openGlobalAiPanel();
       else if (options.renderTarget === 'project') renderProjectPage();
       else renderAiPage();
+      let endpointUrl;
+      try {
+        endpointUrl = new URL(settings.endpoint);
+      } catch {
+        throw new Error(`Invalid endpoint URL: "${settings.endpoint}". Go to AI Settings and enter a valid URL (e.g. https://openrouter.ai/api/v1/chat/completions).`);
+      }
+      const isOpenRouter = endpointUrl.hostname.includes('openrouter.ai');
+      const extraHeaders = isOpenRouter
+        ? { 'HTTP-Referer': location.origin || 'https://direwolves.app', 'X-Title': 'Dire Wolves OS' }
+        : {};
+      const abortCtrl = new AbortController();
+      const abortTimer = setTimeout(() => abortCtrl.abort(), 45000);
       const response = await fetch(settings.endpoint, {
         method: 'POST',
+        signal: abortCtrl.signal,
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${key}`,
+          ...extraHeaders,
         },
         body: JSON.stringify({
           model: settings.model,
@@ -9333,7 +9347,7 @@
             { role: 'user', content: userContent },
           ],
         }),
-      });
+      }).finally(() => clearTimeout(abortTimer));
       updateAiStatus('Reading model response', ['Preparing workspace context', 'Packaging prompt and attachments', `Request sent to ${settings.model}`, 'Reading model response']);
       if (options.renderTarget === 'global') openGlobalAiPanel();
       else if (options.renderTarget === 'project') renderProjectPage();
@@ -9358,8 +9372,14 @@
       }
     } catch (error) {
       state.ai.lastResult = '';
-      state.ai.error = error?.message || 'AI request failed';
-      showToast('AI request failed', state.ai.error);
+      let errMsg = error?.message || 'AI request failed';
+      if (error?.name === 'AbortError') {
+        errMsg = 'Request timed out (45s). The endpoint may be unreachable or very slow.';
+      } else if (errMsg === 'Failed to fetch' || errMsg === 'NetworkError when attempting to fetch resource.') {
+        errMsg = 'Network error — could not reach the AI endpoint. Check: (1) the endpoint URL in AI Settings, (2) your API key, (3) that the service allows browser requests (CORS).';
+      }
+      state.ai.error = errMsg;
+      showToast('AI request failed', errMsg);
     } finally {
       state.ai.loading = false;
       state.ai.status = '';
