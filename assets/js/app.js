@@ -129,6 +129,9 @@
   // bcryptjs loaded via CDN — exposes window.dcodeIO.bcrypt
   const _bcrypt = (typeof dcodeIO !== 'undefined' && dcodeIO.bcrypt) || window.bcrypt || null;
 
+  // Pending AI consent callbacks — set by showAiConsentModal(), cleared on resolve/reject
+  let _aiConsentCallbacks = null;
+
   function hashPassword(plain) {
     if (!plain) return plain;
     if (_bcrypt) return _bcrypt.hashSync(plain, 10);
@@ -2548,6 +2551,28 @@
       return;
     }
 
+    if (action === 'ai-consent-approve') {
+      if (!_aiConsentCallbacks) return;
+      const checked = [...DOM.modalCard.querySelectorAll('input[name="ai-consent-file"]:checked')];
+      const approvedFileIds = checked.map((el) => el.value);
+      const cb = _aiConsentCallbacks;
+      _aiConsentCallbacks = null;
+      DOM.modalOverlay.classList.add('hidden');
+      DOM.modalCard.innerHTML = '';
+      cb.resolve({ approvedFileIds });
+      return;
+    }
+
+    if (action === 'ai-consent-cancel') {
+      if (!_aiConsentCallbacks) return;
+      const cb = _aiConsentCallbacks;
+      _aiConsentCallbacks = null;
+      DOM.modalOverlay.classList.add('hidden');
+      DOM.modalCard.innerHTML = '';
+      cb.reject(new Error('cancelled'));
+      return;
+    }
+
     if (action === 'ai-actions-apply') {
       applyAiActions();
       return;
@@ -2994,6 +3019,11 @@
   function closeModal() {
     DOM.modalOverlay.classList.add('hidden');
     DOM.modalCard.innerHTML = '';
+    if (_aiConsentCallbacks) {
+      const cb = _aiConsentCallbacks;
+      _aiConsentCallbacks = null;
+      cb.reject(new Error('cancelled'));
+    }
   }
 
   function setActivePage(page) {
@@ -7844,6 +7874,9 @@
           members: (proj.memberIds || []).map((id) => getUser(id)?.nick).filter(Boolean),
           owner: getUser(proj.ownerId)?.nick || '',
           department: getDepartment(proj.departmentId)?.name || '',
+          attachments: (proj.attachments || [])
+            .filter((f) => !f.deletedAt && canViewAttachment(f, { entityType: 'project', entityId: proj.id }))
+            .map((f) => ({ name: f.name, type: f.type || '', size: f.size || 0, uploadedAt: f.uploadedAt || '' })),
         } : null,
         openWork: projectItems.filter((t) => !isCompleteStatus(t.status)).map(compactItem),
         overdue: projectItems.filter(isOverdue).map(compactItem),
@@ -9299,6 +9332,117 @@
     }
   }
 
+  function buildAiConsentData(options) {
+    const contextMode = options.contextMode || 'full';
+    const projectFiles = [];
+    if (contextMode === 'project') {
+      const proj = getProject(state.activeProjectPageId);
+      if (proj) {
+        (proj.attachments || [])
+          .filter((f) => !f.deletedAt && canViewAttachment(f, { entityType: 'project', entityId: proj.id }))
+          .forEach((f) => {
+            const mime = (f.type || '').toLowerCase();
+            projectFiles.push({
+              id: f.id || f.url,
+              name: f.name || 'Unnamed file',
+              type: mime,
+              size: f.size || 0,
+              url: f.url || f.link || '',
+              isImage: /^image\//.test(mime),
+              isPdf: /pdf/.test(mime),
+            });
+          });
+      }
+    }
+    return {
+      contextMode,
+      renderTarget: options.renderTarget,
+      projectFiles,
+      workspaceSections: ['Projects & progress', 'Tasks, subtasks & comments', 'Team members & assignments', 'Meetings & calendar', 'CEO Briefs', 'Departments'],
+    };
+  }
+
+  function showAiConsentModal(consentData) {
+    return new Promise((resolve, reject) => {
+      _aiConsentCallbacks = { resolve, reject };
+      const fileRows = consentData.projectFiles.map((f) => {
+        const canRead = f.isImage || f.isPdf;
+        const typeLabel = f.isImage ? 'Image' : f.isPdf ? 'PDF' : 'File';
+        return `<label class="ai-consent-file-row${canRead ? '' : ' ai-consent-file-disabled'}">
+          <input type="checkbox" name="ai-consent-file" value="${escapeHtml(f.id)}"${canRead ? '' : ' disabled'}>
+          <span class="ai-consent-file-name">${escapeHtml(f.name)}</span>
+          <span class="ai-consent-file-badge">${escapeHtml(typeLabel)}</span>
+          ${!canRead ? '<span class="ai-consent-file-meta">metadata only</span>' : ''}
+        </label>`;
+      }).join('');
+      DOM.modalCard.innerHTML = `
+        <div class="ai-consent-modal">
+          <div class="panel-header">
+            <div>
+              <h3 class="drawer-headline">AI Data Access Request</h3>
+              <div class="muted">Review what AI will read before running</div>
+            </div>
+          </div>
+          <div class="ai-consent-section">
+            <div class="ai-consent-section-title">Workspace data — always included</div>
+            <ul class="ai-consent-list">
+              ${consentData.workspaceSections.map((s) => `<li>${escapeHtml(s)}</li>`).join('')}
+            </ul>
+          </div>
+          ${consentData.projectFiles.length ? `
+            <div class="ai-consent-section">
+              <div class="ai-consent-section-title">Project files — tick to include content</div>
+              <div class="ai-consent-files">${fileRows}</div>
+              <div class="ai-consent-hint">Images and PDFs can be read in full. Other types: filename &amp; type only.</div>
+            </div>
+          ` : ''}
+          <div class="ai-consent-excluded">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Passwords, API keys, and auth tokens are <strong>never</strong> shared with AI.
+          </div>
+          <div class="modal-actions">
+            <button class="secondary-button" type="button" data-action="ai-consent-cancel">Cancel</button>
+            <button class="primary-button" type="button" data-action="ai-consent-approve">Approve &amp; Run AI</button>
+          </div>
+        </div>`;
+      DOM.modalOverlay.classList.remove('hidden');
+    });
+  }
+
+  async function fetchApprovedFiles(approvedFileIds, allFiles) {
+    if (!approvedFileIds.length) return { images: [], documents: [] };
+    const selected = allFiles.filter((f) => approvedFileIds.includes(f.id));
+    const images = [];
+    const documents = [];
+    await Promise.all(selected.map(async (file) => {
+      try {
+        if (file.isImage) {
+          const blob = await fetch(file.url).then((r) => r.blob());
+          const dataUrl = await new Promise((res, rej) => {
+            const reader = new FileReader();
+            reader.onload = (e) => res(e.target.result);
+            reader.onerror = rej;
+            reader.readAsDataURL(blob);
+          });
+          images.push({ name: file.name, dataUrl });
+        } else if (file.isPdf && window.pdfjsLib) {
+          const pdf = await window.pdfjsLib.getDocument(file.url).promise;
+          const pageCount = pdf.numPages;
+          let text = '';
+          for (let i = 1; i <= Math.min(pageCount, 30); i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += content.items.map((it) => it.str).join(' ') + '\n';
+          }
+          documents.push({ name: file.name, pageCount, text: text.trim().slice(0, 50000) });
+        }
+      } catch (err) {
+        console.warn('AI file fetch failed:', file.name, err);
+      }
+    }));
+    return { images, documents };
+  }
+
   async function runAi(prompt, options = {}) {
     const settings = state.ai.settings || getAiSettings();
     const key = getAiKey();
@@ -9310,6 +9454,16 @@
       else renderAiPage();
       return;
     }
+    // ── Consent step: show before touching any data ──────────────────────
+    const _consentData = buildAiConsentData(options);
+    let _approvedFileIds = [];
+    try {
+      const consent = await showAiConsentModal(_consentData);
+      _approvedFileIds = consent.approvedFileIds || [];
+    } catch {
+      return; // user cancelled or closed modal
+    }
+    // ─────────────────────────────────────────────────────────────────────
     state.ai.loading = true;
     state.ai.error = '';
     state.ai.pendingActions = [];
@@ -9329,8 +9483,18 @@
       else if (options.renderTarget === 'project') renderProjectPage();
       else renderAiPage();
       const userText = `${prompt}\n\nWorkspace JSON:\n${JSON.stringify(context, null, 2)}`;
-      const images = Array.isArray(options.images) ? options.images : [];
-      const documents = Array.isArray(options.documents) ? options.documents : [];
+      const images = Array.isArray(options.images) ? [...options.images] : [];
+      const documents = Array.isArray(options.documents) ? [...options.documents] : [];
+      // Fetch content of project files approved by user
+      if (_approvedFileIds.length) {
+        updateAiStatus('Fetching approved project files', ['Preparing workspace context', 'Packaging prompt and attachments', 'Fetching approved project files']);
+        if (options.renderTarget === 'global') openGlobalAiPanel();
+        else if (options.renderTarget === 'project') renderProjectPage();
+        else renderAiPage();
+        const fetched = await fetchApprovedFiles(_approvedFileIds, _consentData.projectFiles);
+        images.push(...fetched.images);
+        documents.push(...fetched.documents);
+      }
       const documentText = documents.length
         ? `\n\nAttached PDF reference text (do not summarize or repeat unless explicitly requested):\n${documents.map((doc) => `--- ${doc.name} (${doc.pageCount || '?'} pages) ---\n${doc.text}`).join('\n\n')}`
         : '';
