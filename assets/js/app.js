@@ -2558,6 +2558,17 @@
       return;
     }
 
+    if (action === 'note-toggle') {
+      const noteId = actionEl.dataset.noteId;
+      const body = noteId ? document.getElementById(noteId) : null;
+      if (body) {
+        body.classList.toggle('hidden');
+        const chevron = actionEl.querySelector('.attachment-note-chevron');
+        if (chevron) chevron.textContent = body.classList.contains('hidden') ? '▾' : '▴';
+      }
+      return;
+    }
+
     if (action === 'ai-consent-approve') {
       if (!_aiConsentCallbacks) return;
       const checked = [...DOM.modalCard.querySelectorAll('input[name="ai-consent-file"]:checked')];
@@ -4299,46 +4310,56 @@
         ${files.map((file, index) => {
           const fileKey = attachmentKey(file, index);
           const isLink = file.kind === 'link';
-          const href = isLink ? file.url : (file.dataUrl || file.publicUrl || '#');
-          const subline = isLink ? readableLinkDomain(file.url) : formatFileSize(file.size);
+          const isNote = file.kind === 'note';
           const safeVis = ATTACHMENT_VIS_LEVELS.includes(file.visibleTo) ? file.visibleTo : 'all';
           const badgeLabel = ATTACHMENT_VIS_BADGE_LABELS[safeVis] || '';
-          const visBadge = badgeLabel ? ` · <span class="attachment-vis-badge attachment-vis-${safeVis}">${badgeLabel}</span>` : '';
+          const visBadge = badgeLabel ? `<span class="attachment-vis-badge attachment-vis-${safeVis}">${badgeLabel}</span>` : '';
           const canManagePerm = context.entityType === 'project' && canManageAttachmentPermission(file);
-          const uploaderText = file.uploadedBy ? ` by ${escapeHtml(getUser(file.uploadedBy)?.nick || 'Unknown')}` : '';
+          const uploaderText = file.uploadedBy ? `by ${escapeHtml(getUser(file.uploadedBy)?.nick || 'Unknown')}` : '';
+          const deleteBtn = canDeleteAttachment(file) && context.entityType ? `
+            <button class="attachment-delete-button" type="button" data-action="attachment-delete"
+              data-entity-type="${escapeHtml(context.entityType)}" data-entity-id="${escapeHtml(context.entityId || '')}"
+              data-task-id="${escapeHtml(context.taskId || '')}" data-target-type="${escapeHtml(context.targetType || '')}"
+              data-target-id="${escapeHtml(context.targetId || '')}" data-comment-id="${escapeHtml(context.commentId || '')}"
+              data-file-id="${escapeHtml(fileKey)}">Delete</button>` : '';
+          const visSelect = canManagePerm ? `
+            <select class="attachment-vis-select" data-attachment-vis
+              data-entity-type="${escapeHtml(context.entityType)}" data-entity-id="${escapeHtml(context.entityId || '')}"
+              data-file-id="${escapeHtml(fileKey)}">
+              ${ATTACHMENT_VIS_LEVELS.map((v) => `<option value="${v}"${safeVis === v ? ' selected' : ''}>${escapeHtml(ATTACHMENT_VIS_LABELS[v])}</option>`).join('')}
+            </select>` : '';
+
+          if (isNote) {
+            const noteId = `note-body-${escapeHtml(fileKey)}`;
+            const updatedAt = file.updatedAt ? ` · updated ${file.updatedAt.slice(0, 10)}` : '';
+            return `
+              <div class="attachment-note-card">
+                <div class="attachment-note-header" data-action="note-toggle" data-note-id="${escapeHtml(noteId)}">
+                  <span class="attachment-note-icon">NOTE</span>
+                  <span class="attachment-note-title">${escapeHtml(file.name || 'Note')}</span>
+                  <span class="attachment-note-meta">${escapeHtml(uploaderText)}${escapeHtml(updatedAt)} ${visBadge}</span>
+                  <span class="attachment-note-chevron">▾</span>
+                </div>
+                <div id="${noteId}" class="attachment-note-body hidden">
+                  <pre class="attachment-note-content">${escapeHtml(file.content || '')}</pre>
+                  <div class="attachment-note-actions">${visSelect}${deleteBtn}</div>
+                </div>
+              </div>`;
+          }
+
+          const href = isLink ? file.url : (file.dataUrl || file.publicUrl || '#');
+          const subline = isLink ? readableLinkDomain(file.url) : formatFileSize(file.size);
           return `
             <div class="attachment-item">
               <a class="attachment-chip" href="${escapeHtml(href)}" ${isLink ? '' : `download="${escapeHtml(file.name || 'dire-wolf-file')}"`} target="_blank" rel="noopener">
                 <span class="attachment-icon">${isLink ? 'LINK' : String(file.type || '').startsWith('image/') ? 'IMG' : 'FILE'}</span>
                 <span>
                   <strong>${escapeHtml(file.name || 'Attachment')}</strong>
-                  <small>${escapeHtml(subline)}${uploaderText}${visBadge}</small>
+                  <small>${escapeHtml(subline)} ${escapeHtml(uploaderText)} ${visBadge}</small>
                 </span>
               </a>
-              ${canManagePerm ? `
-                <select class="attachment-vis-select" data-attachment-vis
-                  data-entity-type="${escapeHtml(context.entityType)}"
-                  data-entity-id="${escapeHtml(context.entityId || '')}"
-                  data-file-id="${escapeHtml(fileKey)}">
-                  ${ATTACHMENT_VIS_LEVELS.map((v) => `<option value="${v}"${safeVis === v ? ' selected' : ''}>${escapeHtml(ATTACHMENT_VIS_LABELS[v])}</option>`).join('')}
-                </select>
-              ` : ''}
-              ${canDeleteAttachment(file) && context.entityType ? `
-                <button
-                  class="attachment-delete-button"
-                  type="button"
-                  data-action="attachment-delete"
-                  data-entity-type="${escapeHtml(context.entityType)}"
-                  data-entity-id="${escapeHtml(context.entityId || '')}"
-                  data-task-id="${escapeHtml(context.taskId || '')}"
-                  data-target-type="${escapeHtml(context.targetType || '')}"
-                  data-target-id="${escapeHtml(context.targetId || '')}"
-                  data-comment-id="${escapeHtml(context.commentId || '')}"
-                  data-file-id="${escapeHtml(fileKey)}"
-                >Delete</button>
-              ` : ''}
-            </div>
-          `;
+              ${visSelect}${deleteBtn}
+            </div>`;
         }).join('')}
       </div>
     `;
@@ -8266,6 +8287,8 @@
       '22. mark_notifications_read — mark all current user notifications as read: {"type":"mark_notifications_read"}',
       '23. delete_comment — soft-delete a comment from a task: {"type":"delete_comment","taskId":"<task id>","commentId":"<comment id>"}',
       '24. edit_comment — edit the body of an existing comment: {"type":"edit_comment","taskId":"<task id>","commentId":"<comment id>","comment":"<new body>"}',
+      '25. create_project_note — create an inline markdown document (README, brief, plan, summary) stored inside a project: {"type":"create_project_note","projectId":"<existing project id>","name":"README.md","content":"# Title\\n\\nFull markdown content..."}. Use this whenever the user asks to write a note, readme, document, or summary into a project. Never use add_comment with a project ID.',
+      '26. update_project_note — update an existing project note: {"type":"update_project_note","projectId":"<project id>","noteId":"<note id>","name":"new name (optional)","content":"new content (optional)"}',
       'Action block shape: {"actions":[...one or more action objects...]}',
       'Use real taskId, projectId, departmentId, meetingId, briefId, and user ids from the workspace JSON. Keep action fields minimal: include only fields that should actually change.',
       'Task IDs come from openWork[].id, overdue[].id, dueSoon[].id, and completedWork[].id in the workspace JSON. These are raw IDs starting with "t_" — never add a "task:" or "brief:" prefix.',
@@ -8814,7 +8837,7 @@
   function normalizeAiAction(action) {
     if (!action || typeof action !== 'object') return null;
     const type = String(action.type || '').trim();
-    const validTypes = ['update_task', 'create_task', 'add_subtasks', 'append_task_detail', 'create_project', 'create_project_plan', 'update_task_status', 'assign_task', 'add_comment', 'delete_task', 'delete_project', 'delete_subtask', 'update_project', 'update_subtask', 'create_meeting', 'update_meeting', 'delete_meeting', 'create_brief', 'update_brief', 'delete_brief', 'convert_brief_to_task', 'mark_notifications_read', 'delete_comment', 'edit_comment'];
+    const validTypes = ['update_task', 'create_task', 'add_subtasks', 'append_task_detail', 'create_project', 'create_project_plan', 'update_task_status', 'assign_task', 'add_comment', 'delete_task', 'delete_project', 'delete_subtask', 'update_project', 'update_subtask', 'create_meeting', 'update_meeting', 'delete_meeting', 'create_brief', 'update_brief', 'delete_brief', 'convert_brief_to_task', 'mark_notifications_read', 'delete_comment', 'edit_comment', 'create_project_note', 'update_project_note'];
     if (!validTypes.includes(type)) return null;
     return {
       type,
@@ -9131,6 +9154,46 @@
           if (pf.memberIds) pf.memberIds = Array.from(new Set([proj.ownerId, ...pf.memberIds]));
           Object.assign(proj, pf);
           queueRemoteUpsert('project', proj);
+          applied += 1;
+          return;
+        }
+
+        if (action.type === 'create_project_note') {
+          const proj = getProject(action.projectId);
+          if (!proj) throw new Error(`Project not found: ${action.projectId}`);
+          if (!canEditProject(proj, actor)) throw new Error(`No permission to add note to: ${proj.name}`);
+          const noteName = String(action.name || 'README.md').trim() || 'README.md';
+          const noteContent = String(action.content || '').trim();
+          if (!noteContent) throw new Error('Note content cannot be empty');
+          const note = {
+            id: uid('note'),
+            kind: 'note',
+            name: noteName,
+            content: noteContent,
+            type: 'text/markdown',
+            size: noteContent.length,
+            createdAt: nowIso(),
+            uploadedBy: actor.id,
+            visibleTo: 'all',
+          };
+          proj.attachments = [...(proj.attachments || []), note];
+          queueRemoteUpsert('project', proj);
+          saveSnapshot();
+          applied += 1;
+          return;
+        }
+
+        if (action.type === 'update_project_note') {
+          const proj = getProject(action.projectId);
+          if (!proj) throw new Error(`Project not found: ${action.projectId}`);
+          if (!canEditProject(proj, actor)) throw new Error(`No permission to edit: ${proj.name}`);
+          const note = (proj.attachments || []).find((f) => f.id === action.noteId && f.kind === 'note');
+          if (!note) throw new Error(`Note not found: ${action.noteId}`);
+          if (action.name) note.name = String(action.name).trim();
+          if (action.content !== undefined) note.content = String(action.content).trim();
+          note.updatedAt = nowIso();
+          queueRemoteUpsert('project', proj);
+          saveSnapshot();
           applied += 1;
           return;
         }
