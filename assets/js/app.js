@@ -8287,7 +8287,7 @@
       '22. mark_notifications_read — mark all current user notifications as read: {"type":"mark_notifications_read"}',
       '23. delete_comment — soft-delete a comment from a task: {"type":"delete_comment","taskId":"<task id>","commentId":"<comment id>"}',
       '24. edit_comment — edit the body of an existing comment: {"type":"edit_comment","taskId":"<task id>","commentId":"<comment id>","comment":"<new body>"}',
-      '25. create_project_note — create an inline markdown document (README, brief, plan, summary) stored inside a project: {"type":"create_project_note","projectId":"<existing project id>","name":"README.md","content":"# Title\\n\\nFull markdown content..."}. Use this whenever the user asks to write a note, readme, document, or summary into a project. Never use add_comment with a project ID.',
+      '25. create_project_note — create an inline markdown document (README, brief, plan, summary) stored inside a project: {"type":"create_project_note","projectId":"<existing project id>","name":"README.md","content":"# Title\\n\\nFull markdown content..."}. Use this whenever the user asks to write a note, readme, document, or summary into a project. Never use add_comment with a project ID. CRITICAL: the content field MUST contain the complete markdown text — copy the entire document you wrote in your response verbatim into this field. Never leave content as an empty string or omit it.',
       '26. update_project_note — update an existing project note: {"type":"update_project_note","projectId":"<project id>","noteId":"<note id>","name":"new name (optional)","content":"new content (optional)"}',
       'Action block shape: {"actions":[...one or more action objects...]}',
       'Use real taskId, projectId, departmentId, meetingId, briefId, and user ids from the workspace JSON. Keep action fields minimal: include only fields that should actually change.',
@@ -8798,9 +8798,15 @@
     let fullMatch = null;
     let jsonStr = null;
 
-    // Strategy 1: exact tag pair <<DIRE_WOLF_ACTIONS>>…<</DIRE_WOLF_ACTIONS>>
+    // Strategy 1: exact tag pair <<DIRE_WOLF_ACTIONS>>…<</DIRE_WOLF_ACTIONS>> (double <<)
     const exact = text.match(/<<DIRE_WOLF_ACTIONS>>\s*([\s\S]*?)\s*<<\/DIRE_WOLF_ACTIONS>>/);
     if (exact) { fullMatch = exact[0]; jsonStr = exact[1].trim(); }
+
+    // Strategy 1b: single-< variant </DIRE_WOLF_ACTIONS> or <DIRE_WOLF_ACTIONS>…</DIRE_WOLF_ACTIONS>
+    if (!jsonStr) {
+      const s1b = text.match(/<<DIRE_WOLF_ACTIONS>>\s*([\s\S]*?)\s*<\/DIRE_WOLF_ACTIONS>/);
+      if (s1b) { fullMatch = s1b[0]; jsonStr = s1b[1].trim(); }
+    }
 
     // Strategy 2: opening tag found but closing tag garbled — extract balanced JSON object
     if (!jsonStr) {
@@ -8811,8 +8817,9 @@
         const obj = extractFirstJsonObject(after);
         if (obj) {
           const objEnd = after.indexOf(obj) + obj.length;
-          // consume everything after the JSON up to the next newline (garbled closing tag)
-          const trailing = after.slice(objEnd).match(/^[^\n]*/)?.[0] || '';
+          // consume trailing whitespace + any garbled tag (e.g. </DIRE_WOLF_ACTIONS>, < genetic_...>>)
+          const trailing = after.slice(objEnd).match(/^\s*<?\/?\s*(?:DIRE_WOLF_ACTIONS|genetic_DIRE_WOLF_ACTIONS)[^>]*>?\s*/)?.[0]
+            ?? after.slice(objEnd).match(/^\s*/)?.[0] ?? '';
           fullMatch = text.slice(openIdx, openIdx + OPEN.length + objEnd + trailing.length);
           jsonStr = obj;
         }
@@ -9215,8 +9222,8 @@
           if (!proj) throw new Error(`Project not found: ${action.projectId}`);
           if (!canEditProject(proj, actor)) throw new Error(`No permission to add note to: ${proj.name}`);
           const noteName = String(action.name || 'README.md').trim() || 'README.md';
-          const noteContent = String(action.content || '').trim();
-          if (!noteContent) throw new Error('Note content cannot be empty');
+          let noteContent = String(action.content || '').trim();
+          if (!noteContent) noteContent = `# ${noteName}\n\n*(AI did not provide content — edit this note to add text.)*`;
           const note = {
             id: uid('note'),
             kind: 'note',
