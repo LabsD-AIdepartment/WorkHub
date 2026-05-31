@@ -2995,6 +2995,17 @@
 
     saveSession(user.id);
     await supabaseSignIn(user.email, password); // B2: obtain a JWT for RLS (login still proceeds if this fails)
+    // B2: the startup load ran as anon (empty once RLS enforces). Reload as the logged-in user (JWT).
+    if (_useJwt && _authToken?.access_token) {
+      try {
+        const remote = await adapter.loadAll(state.data);
+        if (remote.ok) {
+          state.data = sanitizeData(remote.payload);
+          state.dataSource = remote.partial ? 'Supabase database (partial fallback)' : 'Supabase database';
+          saveSnapshot();
+        }
+      } catch (e) { console.warn('post-login reload skipped', e); }
+    }
     // Restore per-user AI settings + key from DB
     if (user.aiSettings && typeof user.aiSettings === 'object') {
       writeLocal(storageKeys.aiSettings, { ...defaultAiSettings(), ...user.aiSettings });
