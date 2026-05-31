@@ -2230,10 +2230,16 @@
 
     try {
       const remote = await adapter.loadAll(state.data);
-      if (remote.ok) {
+      // B2/RLS: an anon load (not signed in) now returns empty rows (200) for every table except
+      // users — adopting it would overwrite a good snapshot with blanks and mislabel the source.
+      // Only adopt the load when it carries the user's identity: pre-cutover, or a valid JWT.
+      const authed = !_useJwt || authBearer() !== Config.supabase.anonKey;
+      if (remote.ok && authed) {
         state.data = sanitizeData(remote.payload);
         state.dataSource = remote.partial ? 'Supabase database (partial fallback)' : 'Supabase database';
         saveSnapshot();
+      } else if (remote.ok && !authed) {
+        state.dataSource = 'Sign in to load live data';
       }
     } catch (error) {
       console.warn('Supabase load skipped', error);
@@ -10383,6 +10389,8 @@
   async function init() {
     cacheDom();
     bindStaticEvents();
+    restoreAuthToken();   // B2: restore the JWT BEFORE the data load, so a logged-in refresh
+                          // loads via the user's token (RLS) instead of anon (which returns empty).
     await bootstrap();
     restoreSession();
     syncStatusBanner();
