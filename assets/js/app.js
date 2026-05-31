@@ -6,6 +6,7 @@
     filters: 'direwolves_workspace_filters',
     aiSettings: 'direwolf_ai_byok_settings',
     aiKey: 'direwolf_ai_byok_key',
+    authToken: 'direwolves_auth_token',
   };
 
   function emptyData() {
@@ -149,6 +150,62 @@
     const s = stored || '1234';
     if (s.startsWith('$2')) return _bcrypt ? _bcrypt.compareSync(entered, s) : entered === s;
     return entered === s; // legacy plaintext comparison
+  }
+
+  // ---- Supabase Auth (B2): per-user JWT for RLS-enforced DB access ----
+  // Additive + safe: login still verifies client-side (above); we ALSO sign in to Supabase
+  // Auth to obtain a JWT. The data layer (adapter.headers) sends the JWT when present and
+  // unexpired, otherwise the anon key — identical behaviour while RLS is off, so nothing
+  // breaks; it simply readies the app for RLS (Phase 2). Token refresh is deferred: when the
+  // JWT expires the app falls back to anon (still works until RLS is enabled).
+  let _authToken = null; // { access_token, refresh_token, exp(unix-seconds) }
+  // Phase 3 acquires + stores the JWT on login, but the data layer keeps using the anon key
+  // until Phase 2 flips this to true — because sending a user JWT (role `authenticated`) before
+  // that role has table GRANTs + RLS policies causes 403s on writes. Phase 2 = grant authenticated
+  // + add RLS + set this true, in one coordinated step.
+  let _useJwt = true;
+
+  function supabaseAuthUrl() {
+    const base = Config.supabase?.baseUrl || '';
+    return base.replace(/\/rest\/v1\/?$/, '') + '/auth/v1';
+  }
+  function setAuthToken(data) {
+    if (!data || !data.access_token) return clearAuthToken();
+    let exp = 0;
+    try { exp = JSON.parse(atob(data.access_token.split('.')[1])).exp || 0; } catch (e) {}
+    _authToken = { access_token: data.access_token, refresh_token: data.refresh_token || '', exp };
+    sessionStorage.setItem(storageKeys.authToken, JSON.stringify(_authToken));
+  }
+  function restoreAuthToken() {
+    try { _authToken = JSON.parse(sessionStorage.getItem(storageKeys.authToken)) || null; } catch (e) { _authToken = null; }
+  }
+  function clearAuthToken() {
+    _authToken = null;
+    sessionStorage.removeItem(storageKeys.authToken);
+  }
+  function authBearer() {
+    // Use the user's JWT only when enabled (Phase 2) AND valid (30s skew); else the anon key.
+    if (_useJwt && _authToken?.access_token && _authToken.exp && (Date.now() / 1000 < _authToken.exp - 30)) {
+      return _authToken.access_token;
+    }
+    return Config.supabase.anonKey;
+  }
+  async function supabaseSignIn(email, password) {
+    if (!Config.supabase?.enabled || !email) return false;
+    try {
+      const res = await fetch(supabaseAuthUrl() + '/token?grant_type=password', {
+        method: 'POST',
+        headers: { apikey: Config.supabase.anonKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: String(email).toLowerCase(), password }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.access_token) { setAuthToken(data); return true; }
+      console.warn('Supabase Auth sign-in returned no token (login still proceeds):', data.error_description || data.msg || res.status);
+      return false;
+    } catch (e) {
+      console.warn('Supabase Auth sign-in failed (login still proceeds):', e.message);
+      return false;
+    }
   }
 
   function uid(prefix) {
@@ -1534,6 +1591,7 @@
 
   function clearSession() {
     state.currentUserId = null;
+    clearAuthToken();
     localStorage.removeItem(storageKeys.session);
     sessionStorage.removeItem(storageKeys.session);
   }
@@ -1549,6 +1607,7 @@
     if (!saved?.currentUserId) return false;
     if (!getUser(saved.currentUserId)) return false;
     state.currentUserId = saved.currentUserId;
+    restoreAuthToken();
     return true;
   }
 
@@ -1556,7 +1615,7 @@
     headers(extra) {
       return Object.assign({
         apikey: Config.supabase.anonKey,
-        Authorization: `Bearer ${Config.supabase.anonKey}`,
+        Authorization: `Bearer ${authBearer()}`,
         'Content-Type': 'application/json',
         Prefer: 'return=representation',
       }, extra || {});
@@ -2204,7 +2263,7 @@
         method: 'POST',
         headers: {
           'apikey': Config.supabase.anonKey,
-          'Authorization': `Bearer ${Config.supabase.anonKey}`,
+          'Authorization': `Bearer ${authBearer()}`,
           'Content-Type': 'application/json',
           'Prefer': 'return=minimal',
         },
@@ -2218,7 +2277,7 @@
       const sevenDaysAgo = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
       const res = await fetch(
         `${Config.supabase.baseUrl}/system_logs?created_at=gte.${sevenDaysAgo}&order=created_at.desc&limit=200`,
-        { headers: { 'apikey': Config.supabase.anonKey, 'Authorization': `Bearer ${Config.supabase.anonKey}` } }
+        { headers: { 'apikey': Config.supabase.anonKey, 'Authorization': `Bearer ${authBearer()}` } }
       );
       return res.ok ? await res.json() : [];
     } catch (_) { return []; }
@@ -2233,7 +2292,7 @@
           method: 'DELETE',
           headers: {
             'apikey': Config.supabase.anonKey,
-            'Authorization': `Bearer ${Config.supabase.anonKey}`,
+            'Authorization': `Bearer ${authBearer()}`,
           },
         }
       );
@@ -2907,7 +2966,7 @@
     // Quick Login panel removed per design revision — no-op
   }
 
-  function handleLogin() {
+  async function handleLogin() {
     const identifier = (DOM.loginIdentifier.value || '').trim().toLowerCase();
     const password = DOM.loginPassword.value || '';
     DOM.loginError.textContent = '';
@@ -2935,6 +2994,7 @@
     }
 
     saveSession(user.id);
+    await supabaseSignIn(user.email, password); // B2: obtain a JWT for RLS (login still proceeds if this fails)
     // Restore per-user AI settings + key from DB
     if (user.aiSettings && typeof user.aiSettings === 'object') {
       writeLocal(storageKeys.aiSettings, { ...defaultAiSettings(), ...user.aiSettings });
